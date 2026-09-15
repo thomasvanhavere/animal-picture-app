@@ -27,6 +27,22 @@
         <h2 id="fetch-title">Fetch new pictures</h2>
 
         <form id="fetch-form" class="fetch-form" novalidate>
+          <!-- Which animal to fetch. Radio buttons, styled as one segmented
+               control; the arrow keys move between them. -->
+          <fieldset id="animal-picker" class="animal-picker">
+            <legend>Animal</legend>
+            <div class="segmented">
+              <input type="radio" id="animal-random" name="animal" value="random" checked />
+              <label for="animal-random">Random</label>
+              <input type="radio" id="animal-cat" name="animal" value="cat" />
+              <label for="animal-cat">Cat</label>
+              <input type="radio" id="animal-dog" name="animal" value="dog" />
+              <label for="animal-dog">Dog</label>
+              <input type="radio" id="animal-bear" name="animal" value="bear" />
+              <label for="animal-bear">Bear</label>
+            </div>
+          </fieldset>
+
           <div class="field">
             <label for="count-input">How many</label>
             <input

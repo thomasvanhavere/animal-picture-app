@@ -130,6 +130,71 @@ body {
   gap: 12px;
 }
 
+/* The animal choice: radio buttons that look like one row of buttons, the
+   selected one raised. The round radio circles themselves are hidden, but
+   still there, so keyboards and screen readers use them as normal. */
+.animal-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.animal-picker legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.segmented {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+}
+
+.segmented input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.segmented label {
+  padding: 7px 14px;
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.segmented label:hover {
+  color: var(--color-text);
+}
+
+.segmented input:checked + label {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgb(43 37 32 / 15%);
+}
+
+.segmented input:focus-visible + label {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.segmented input:disabled + label {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -356,6 +421,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .carousel-track,
   .button,
+  .segmented label,
   .carousel-dot::after {
     transition: none;
   }

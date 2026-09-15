@@ -38,8 +38,8 @@ containers**.
 2. **Show the latest picture.** You can ask for the most recently saved
    picture, either of one kind of animal or of any animal.
 3. **A web page.** At http://localhost:8080 you see the latest saved picture,
-   and a button that fetches as many random pictures as you ask for. Several
-   pictures are shown in a carousel.
+   and you can fetch as many pictures as you like, of a cat, a dog, a bear or
+   a random animal. Several pictures are shown in a carousel.
 4. **More to come.** The design leaves room for new features, such as running
    the picture fetch as a step in a Camunda process.
 
@@ -130,7 +130,7 @@ animal-picture-app/
     │   ├── main.ts               Starting point: starts the page with the real API
     │   ├── app.ts                The page's behaviour: latest picture, fetch button, results
     │   ├── api/                  Talks to the API
-    │   ├── components/           The picture card, the carousel and the "How many" box
+    │   ├── components/           The picture card, the carousel, the animal choice and the "How many" box
     │   └── styles.css            How the page looks
     └── test/                     Automated tests, run in a simulated browser page
 ```
@@ -324,12 +324,16 @@ The page at http://localhost:8080 has two parts.
 
 **Fetch new pictures** (left, or on top on a phone):
 
+- **Animal** chooses what to fetch: **Random** (the default), **Cat**, **Dog**
+  or **Bear**. With Random, each picture gets its own random animal,
+  whatever `DEFAULT_ANIMAL` says. Choosing an animal that is switched off in
+  `ENABLED_ANIMALS` shows the API's error message.
 - **How many** is a number box that starts at 1. It only accepts whole
   numbers: keys like `-`, `e` or `.` do nothing, pasted text is cleaned up
   (`-5` becomes `5`), and an empty box or `0` goes back to 1 when you leave it.
-- **Fetch random pictures** asks the API for that many pictures with
-  `animal=random`, so each picture can be a cat, a dog or a bear, whatever
-  `DEFAULT_ANIMAL` says. While fetching, the button is disabled.
+- **Fetch** asks the API for that many pictures of the chosen animal. The
+  button says what it will do, for example "Fetch 3 dog pictures". While
+  fetching, the button and the choices are disabled.
 - The fetched pictures appear below. One picture is shown on its own;
   several are shown in a **carousel**. Move through it with the ‹ › buttons,
   the dots, the left and right arrow keys, or by swiping on a touch screen.
@@ -524,7 +528,7 @@ a fake API, so no server is needed.
 | `count-input.test.ts` | The "How many" box refuses anything but whole numbers of 1 or more |
 | `carousel.test.ts` | The carousel moves with buttons, dots, arrow keys and swipes, and wraps around |
 | `picture-api.test.ts` | The right requests are sent, and error answers become readable messages |
-| `app.test.ts` | The real `index.html`, used like a person would: latest picture, fetching one or several pictures, the busy state, and errors |
+| `app.test.ts` | The real `index.html`, used like a person would: latest picture, choosing an animal, fetching one or several pictures, the busy state, and errors |
 
 ---
 

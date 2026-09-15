@@ -3,15 +3,16 @@
  *
  * Connects the page's elements to the API:
  *   - when the page opens, the latest saved picture is shown,
- *   - the button fetches as many random pictures as the "How many" box
- *     says, shows them (in a carousel when there are several), and then
- *     updates the latest picture.
+ *   - the button fetches as many pictures of the chosen animal (or of random
+ *     animals) as the "How many" box says, shows them (in a carousel when
+ *     there are several), and then updates the latest picture.
  *
  * It receives the elements and the API client from outside, instead of
  * finding or creating them itself. main.ts passes in the real ones; the
  * tests pass in a fake API, so they don't need a server.
  */
-import { ApiError, type PictureApi, type PictureDetails } from './api/picture-api';
+import { ApiError, type AnimalChoice, type PictureApi, type PictureDetails } from './api/picture-api';
+import { readAnimalChoice } from './components/animal-picker';
 import { createCarousel } from './components/carousel';
 import { readCount, setupCountInput } from './components/count-input';
 import { element } from './components/dom';
@@ -20,6 +21,7 @@ import { createPictureCard } from './components/picture-card';
 /** The elements of index.html that the code works with. */
 export interface PageElements {
   form: HTMLFormElement;
+  animalPicker: HTMLFieldSetElement;
   countInput: HTMLInputElement;
   fetchButton: HTMLButtonElement;
   status: HTMLElement;
@@ -39,6 +41,7 @@ export function findPageElements(root: Document): PageElements {
 
   return {
     form: find('fetch-form', HTMLFormElement),
+    animalPicker: find('animal-picker', HTMLFieldSetElement),
     countInput: find('count-input', HTMLInputElement),
     fetchButton: find('fetch-button', HTMLButtonElement),
     status: find('fetch-status', HTMLElement),
@@ -53,6 +56,7 @@ export function startApp(page: PageElements, api: PictureApi): void {
   updateButtonText(page);
   page.countInput.addEventListener('input', () => updateButtonText(page));
   page.countInput.addEventListener('change', () => updateButtonText(page));
+  page.animalPicker.addEventListener('change', () => updateButtonText(page));
 
   showNothingFetchedYet(page.fetchedPictures);
   void loadLatestPicture(page, api);
@@ -69,13 +73,14 @@ export function startApp(page: PageElements, api: PictureApi): void {
 // ---------------------------------------------------------------------------
 
 async function fetchPictures(page: PageElements, api: PictureApi): Promise<void> {
+  const animal = readAnimalChoice(page.animalPicker);
   const count = readCount(page.countInput);
   updateButtonText(page);
   setBusy(page, true);
-  showStatus(page, `Fetching ${pluralize(count, 'random picture')}…`);
+  showStatus(page, `Fetching ${describePictures(animal, count)}…`);
 
   try {
-    const pictures = await api.fetchRandomPictures(count);
+    const pictures = await api.fetchPictures(animal, count);
     showFetchedPictures(page.fetchedPictures, pictures);
     showStatus(page, `Fetched ${pluralize(pictures.length, 'new picture')}.`);
     // The newest of these is now the latest saved picture. Ask the API
@@ -110,6 +115,8 @@ function showNothingFetchedYet(container: HTMLElement): void {
 function setBusy(page: PageElements, busy: boolean): void {
   page.fetchButton.disabled = busy;
   page.countInput.disabled = busy;
+  // Disabling the group disables every radio button in it.
+  page.animalPicker.disabled = busy;
   page.fetchedPictures.setAttribute('aria-busy', String(busy));
   if (busy) {
     page.fetchButton.textContent = 'Fetching…';
@@ -118,10 +125,15 @@ function setBusy(page: PageElements, busy: boolean): void {
   }
 }
 
-/** The button says how many pictures it will fetch: "Fetch 3 random pictures". */
+/** The button says what it will fetch: "Fetch 3 random pictures", "Fetch 1 dog picture". */
 function updateButtonText(page: PageElements): void {
   const count = Number(page.countInput.value) >= 1 ? Number(page.countInput.value) : 1;
-  page.fetchButton.textContent = `Fetch ${pluralize(count, 'random picture')}`;
+  page.fetchButton.textContent = `Fetch ${describePictures(readAnimalChoice(page.animalPicker), count)}`;
+}
+
+/** "random", 3 -> "3 random pictures";  "dog", 1 -> "1 dog picture". */
+function describePictures(animal: AnimalChoice, count: number): string {
+  return pluralize(count, `${animal} picture`);
 }
 
 function showStatus(page: PageElements, message: string, options: { isError?: boolean } = {}): void {

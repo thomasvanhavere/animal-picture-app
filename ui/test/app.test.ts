@@ -7,7 +7,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ApiError, type PictureApi, type PictureDetails } from '../src/api/picture-api';
+import { ApiError, type AnimalChoice, type PictureApi, type PictureDetails } from '../src/api/picture-api';
 import { findPageElements, startApp } from '../src/app';
 
 function picture(id: number, animal = 'cat'): PictureDetails {
@@ -29,13 +29,14 @@ function picture(id: number, animal = 'cat'): PictureDetails {
  */
 function fakeApi(initialPictures: PictureDetails[] = []) {
   const saved = [...initialPictures];
-  const fetchRequests: number[] = [];
+  /** Every fetch asked for, as [animal, count]. */
+  const fetchRequests: [AnimalChoice, number][] = [];
   let nextError: Error | null = null;
   let holdBack: Promise<void> | null = null;
 
   const api: PictureApi = {
-    async fetchRandomPictures(count) {
-      fetchRequests.push(count);
+    async fetchPictures(animal, count) {
+      fetchRequests.push([animal, count]);
       if (holdBack) await holdBack;
       if (nextError) {
         const error = nextError;
@@ -44,7 +45,7 @@ function fakeApi(initialPictures: PictureDetails[] = []) {
       }
       const animals = ['cat', 'dog', 'bear'];
       const created = Array.from({ length: count }, (_, i) =>
-        picture(saved.length + i + 1, animals[(saved.length + i) % animals.length]),
+        picture(saved.length + i + 1, animal === 'random' ? animals[(saved.length + i) % animals.length] : animal),
       );
       saved.push(...created);
       return created;
@@ -87,6 +88,11 @@ function openPage(api: PictureApi) {
       page.countInput.dispatchEvent(new Event('input'));
       page.countInput.dispatchEvent(new Event('change'));
     },
+    /** Clicks one of the animal choices. */
+    chooseAnimal(animal: AnimalChoice) {
+      document.getElementById(`animal-${animal}`)!.click();
+    },
+    selectedAnimal: () => document.querySelector<HTMLInputElement>('input[name="animal"]:checked')?.value,
     pressFetch() {
       page.fetchButton.click();
     },
@@ -127,6 +133,7 @@ describe('when the page opens', () => {
   it('is ready to fetch 1 picture', () => {
     const page = openPage(fakeApi().api);
 
+    expect(page.selectedAnimal()).toBe('random');
     expect(page.countInput.value).toBe('1');
     expect(page.fetchButton.textContent).toBe('Fetch 1 random picture');
     expect(page.fetchedPictures.textContent).toBe('Pictures you fetch will appear here.');
@@ -141,7 +148,7 @@ describe('fetching pictures', () => {
     page.pressFetch();
 
     await vi.waitFor(() => expect(page.fetchedImageSrcs()).toEqual(['/api/pictures/1']));
-    expect(fake.fetchRequests).toEqual([1]);
+    expect(fake.fetchRequests).toEqual([['random', 1]]);
     expect(page.carousel()).toBeNull();
     expect(page.status.textContent).toBe('Fetched 1 new picture.');
   });
@@ -155,9 +162,36 @@ describe('fetching pictures', () => {
     page.pressFetch();
 
     await vi.waitFor(() => expect(page.carousel()).not.toBeNull());
-    expect(fake.fetchRequests).toEqual([3]);
+    expect(fake.fetchRequests).toEqual([['random', 3]]);
     expect(page.fetchedImageSrcs()).toEqual(['/api/pictures/1', '/api/pictures/2', '/api/pictures/3']);
     expect(page.status.textContent).toBe('Fetched 3 new pictures.');
+  });
+
+  it.each(['cat', 'dog', 'bear'] as const)('fetches pictures of the chosen animal: %s', async (animal) => {
+    const fake = fakeApi();
+    const page = openPage(fake.api);
+
+    page.chooseAnimal(animal);
+    page.typeCount('2');
+    expect(page.fetchButton.textContent).toBe(`Fetch 2 ${animal} pictures`);
+    page.pressFetch();
+
+    await vi.waitFor(() => expect(page.carousel()).not.toBeNull());
+    expect(fake.fetchRequests).toEqual([[animal, 2]]);
+    expect(page.status.textContent).toBe('Fetched 2 new pictures.');
+  });
+
+  it('lets the user switch back to random', async () => {
+    const fake = fakeApi();
+    const page = openPage(fake.api);
+
+    page.chooseAnimal('bear');
+    expect(page.fetchButton.textContent).toBe('Fetch 1 bear picture');
+    page.chooseAnimal('random');
+    expect(page.fetchButton.textContent).toBe('Fetch 1 random picture');
+    page.pressFetch();
+
+    await vi.waitFor(() => expect(fake.fetchRequests).toEqual([['random', 1]]));
   });
 
   it('updates the latest picture afterwards', async () => {
@@ -176,12 +210,17 @@ describe('fetching pictures', () => {
 
     page.typeCount('');
     page.pressFetch();
-    await vi.waitFor(() => expect(fake.fetchRequests).toEqual([1]));
+    await vi.waitFor(() => expect(fake.fetchRequests).toEqual([['random', 1]]));
 
     page.typeCount('0');
     await vi.waitFor(() => expect(page.fetchButton.disabled).toBe(false));
     page.pressFetch();
-    await vi.waitFor(() => expect(fake.fetchRequests).toEqual([1, 1]));
+    await vi.waitFor(() =>
+      expect(fake.fetchRequests).toEqual([
+        ['random', 1],
+        ['random', 1],
+      ]),
+    );
     expect(page.countInput.value).toBe('1');
   });
 
@@ -196,12 +235,13 @@ describe('fetching pictures', () => {
     await vi.waitFor(() => expect(page.fetchButton.disabled).toBe(true));
     expect(page.fetchButton.textContent).toBe('Fetching…');
     expect(page.countInput.disabled).toBe(true);
+    expect(page.animalPicker.disabled).toBe(true);
     expect(page.status.textContent).toBe('Fetching 2 random pictures…');
     page.pressFetch();
 
     release();
     await vi.waitFor(() => expect(page.fetchButton.disabled).toBe(false));
-    expect(fake.fetchRequests).toEqual([2]);
+    expect(fake.fetchRequests).toEqual([['random', 2]]);
     expect(page.fetchButton.textContent).toBe('Fetch 2 random pictures');
   });
 

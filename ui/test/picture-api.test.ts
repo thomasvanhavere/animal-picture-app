@@ -31,14 +31,22 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-describe('fetchRandomPictures', () => {
-  it('asks the API for that many pictures of random animals', async () => {
+describe('fetchPictures', () => {
+  it('asks the API for that many pictures of the chosen animal', async () => {
     const { fetchFn, calls } = fakeFetch(json({ count: 1, pictures: [details] }, 201));
 
-    const pictures = await createPictureApi(fetchFn).fetchRandomPictures(3);
+    const pictures = await createPictureApi(fetchFn).fetchPictures('dog', 3);
 
-    expect(calls).toEqual([{ url: '/api/pictures?animal=random&count=3', method: 'POST' }]);
+    expect(calls).toEqual([{ url: '/api/pictures?animal=dog&count=3', method: 'POST' }]);
     expect(pictures).toEqual([details]);
+  });
+
+  it('asks for random animals with animal=random', async () => {
+    const { fetchFn, calls } = fakeFetch(json({ count: 1, pictures: [details] }, 201));
+
+    await createPictureApi(fetchFn).fetchPictures('random', 1);
+
+    expect(calls).toEqual([{ url: '/api/pictures?animal=random&count=1', method: 'POST' }]);
   });
 
   it("passes the API's own error message on", async () => {
@@ -46,7 +54,7 @@ describe('fetchRandomPictures', () => {
       json({ error: 'Bad Request', message: 'count must be between 1 and 10, but it is 11.' }, 400),
     );
 
-    await expect(createPictureApi(fetchFn).fetchRandomPictures(11)).rejects.toThrow(
+    await expect(createPictureApi(fetchFn).fetchPictures('random', 11)).rejects.toThrow(
       new ApiError(400, 'count must be between 1 and 10, but it is 11.'),
     );
   });
@@ -54,7 +62,7 @@ describe('fetchRandomPictures', () => {
   it('explains when the API is down and Nginx answers with a web page instead', async () => {
     const { fetchFn } = fakeFetch(new Response('<html>502 Bad Gateway</html>', { status: 502 }));
 
-    await expect(createPictureApi(fetchFn).fetchRandomPictures(1)).rejects.toThrow(
+    await expect(createPictureApi(fetchFn).fetchPictures('random', 1)).rejects.toThrow(
       'The picture API is not available right now. Please try again in a moment.',
     );
   });
@@ -64,7 +72,7 @@ describe('fetchRandomPictures', () => {
       throw new TypeError('Failed to fetch');
     }) as typeof fetch;
 
-    await expect(createPictureApi(failingFetch).fetchRandomPictures(1)).rejects.toThrow(
+    await expect(createPictureApi(failingFetch).fetchPictures('random', 1)).rejects.toThrow(
       new ApiError(0, 'Could not reach the server. Check your connection and try again.'),
     );
   });

@@ -25,6 +25,13 @@ export interface PictureDetails {
   url: string;
 }
 
+/**
+ * What can be asked for when fetching: one of the animals, or "random" for
+ * a random animal per picture. These are the values the API accepts in ?animal=.
+ */
+export const ANIMAL_CHOICES = ['random', 'cat', 'dog', 'bear'] as const;
+export type AnimalChoice = (typeof ANIMAL_CHOICES)[number];
+
 /** Something went wrong talking to the API. The message is meant for the user. */
 export class ApiError extends Error {
   constructor(
@@ -39,10 +46,11 @@ export class ApiError extends Error {
 
 export interface PictureApi {
   /**
-   * Asks the API to download and save pictures of random animals.
+   * Asks the API to download and save pictures.
+   * @param animal  Which animal, or "random" for a random animal per picture.
    * @returns The saved pictures, oldest first.
    */
-  fetchRandomPictures(count: number): Promise<PictureDetails[]>;
+  fetchPictures(animal: AnimalChoice, count: number): Promise<PictureDetails[]>;
 
   /** The most recently saved picture of any animal, or null if nothing has been saved yet. */
   getLatestPicture(): Promise<PictureDetails | null>;
@@ -73,8 +81,9 @@ export function createPictureApi(fetchFn: typeof fetch = (input, init) => fetch(
   }
 
   return {
-    async fetchRandomPictures(count) {
-      const response = await send(`/api/pictures?animal=random&count=${count}`, { method: 'POST' });
+    async fetchPictures(animal, count) {
+      const query = new URLSearchParams({ animal, count: String(count) });
+      const response = await send(`/api/pictures?${query}`, { method: 'POST' });
       const body = (await response.json()) as { pictures: PictureDetails[] };
       return body.pictures;
     },
