@@ -63,7 +63,10 @@ function fakeRepository() {
   return { repository, rows };
 }
 
-/** The settings the service sees: cats and dogs only, random default, at most 3 pictures per request. */
+/**
+ * The settings the service sees: cats and dogs only, random default, at most 3 pictures per request.
+ * Their type (ServiceConfig) isn't exported, so it is taken from the constructor's first parameter.
+ */
 const config: ConstructorParameters<typeof PictureService>[0] = {
   enabledAnimals: ['cat', 'dog'],
   defaultAnimal: 'random',

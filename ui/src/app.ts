@@ -4,7 +4,7 @@
  * Connects the page's elements to the API:
  *   - when the page opens, the latest saved picture is shown,
  *   - the button fetches as many pictures of the chosen animal (or of random
- *     animals) as the "How many" box says, shows them (in a carousel when
+ *     animals) as the "#Pictures" box says, shows them (in a carousel when
  *     there are several), and then updates the latest picture.
  *
  * It receives the elements and the API client from outside, instead of
@@ -59,6 +59,9 @@ export function startApp(page: PageElements, api: PictureApi): void {
   page.animalPicker.addEventListener('change', () => updateButtonText(page));
 
   showNothingFetchedYet(page.fetchedPictures);
+  // "void" marks the promise as deliberately not awaited: the page starts
+  // without waiting for the picture, and loadLatestPicture shows its own
+  // errors. The same goes for fetchPictures below.
   void loadLatestPicture(page, api);
 
   page.form.addEventListener('submit', (event) => {
@@ -127,6 +130,9 @@ function setBusy(page: PageElements, busy: boolean): void {
 
 /** The button says what it will fetch: "Fetch 3 random pictures", "Fetch 1 dog picture". */
 function updateButtonText(page: PageElements): void {
+  // Not readCount(): it writes the number back into the box, which would stop
+  // the user clearing the box to type a new number. While the box is empty or
+  // 0, the button says 1, which is also what will be fetched.
   const count = Number(page.countInput.value) >= 1 ? Number(page.countInput.value) : 1;
   page.fetchButton.textContent = `Fetch ${describePictures(readAnimalChoice(page.animalPicker), count)}`;
 }

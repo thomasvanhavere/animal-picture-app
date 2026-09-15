@@ -47,6 +47,8 @@ export class PictureRepository {
    * saved, or (if anything goes wrong) none of them are.
    */
   async saveAll(pictures: Omit<AnimalPicture, 'id' | 'createdAt'>[]): Promise<AnimalPicture[]> {
+    // create() turns each plain object into an AnimalPicture, so save() knows
+    // which table the rows belong to. Plain objects alone don't say that.
     return this.repository.manager.transaction((manager) =>
       manager.save(pictures.map((picture) => manager.create(AnimalPicture, picture))),
     );
@@ -58,6 +60,9 @@ export class PictureRepository {
    */
   async findLatest(): Promise<AnimalPicture | null> {
     return this.repository.findOne({
+      // TypeORM's findOne() refuses to run without a "where", to prevent
+      // accidental "any row" queries. Here any row is fine (the order picks
+      // the newest), so an empty one is passed on purpose.
       where: {},
       order: NEWEST_FIRST,
     });
@@ -67,6 +72,7 @@ export class PictureRepository {
   async findLatestDetails(): Promise<AnimalPictureDetails | null> {
     return this.repository.findOne({
       select: DETAIL_COLUMNS,
+      // Empty on purpose, see findLatest.
       where: {},
       order: NEWEST_FIRST,
     });

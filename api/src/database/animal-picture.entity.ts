@@ -18,8 +18,9 @@ import type { Animal } from '../config/animals.js';
 
 /** One downloaded animal picture, exactly as it was received from the picture service. */
 @Entity({ name: 'animal_pictures' })
-// The index created by the migration, for the "latest picture" query. Listed
-// here too, so TypeORM knows it belongs to the table and never drops it.
+// The index created by the migration (see there for what it's for). Listed
+// here too, so that if migrations are ever generated from the entities
+// (typeorm migration:generate), TypeORM doesn't propose dropping it.
 @Index('idx_animal_pictures_animal_created_at', ['animal', 'createdAt'])
 export class AnimalPicture {
   /** A number that uniquely identifies the picture. The database hands these out in order. */
@@ -55,7 +56,11 @@ export class AnimalPicture {
   @Column({ name: 'image_data', type: 'bytea' })
   imageData!: Buffer;
 
-  /** When the picture was saved. Filled in automatically by the database. */
+  /**
+   * When the picture was saved. Filled in automatically by the database.
+   * "timestamptz" is PostgreSQL's "timestamp with time zone": it stores the
+   * exact moment, so the time stays correct whatever time zone the server uses.
+   */
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 }

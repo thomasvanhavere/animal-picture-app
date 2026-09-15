@@ -1,5 +1,5 @@
 /**
- * count-input.test.ts : tests for the "How many" box
+ * count-input.test.ts : tests for the "#Pictures" box
  *
  * Checks that only whole numbers of 1 or more can end up in the box, however
  * the user tries: typing, pasting, or clearing it.

@@ -4,11 +4,13 @@
  * Express lets us register one function that receives every error thrown
  * while handling a request. This is it. Having one place for this means the
  * controllers can simply "throw" and don't each need their own try/catch.
+ * That includes async handlers: Express 5 passes their errors on by itself.
+ * (In Express 4, every async handler had to catch them and call next(error).)
  *
  * Every error answer has the same JSON shape, so callers (and the web page)
  * can always read it the same way:
  *
- *   { "error": "Not Found", "message": "No cat picture has been saved yet." }
+ *   { "error": "Not Found", "message": "No picture has been saved yet." }
  */
 import type { NextFunction, Request, Response } from 'express';
 import { HttpError } from './http-error.js';

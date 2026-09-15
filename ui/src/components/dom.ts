@@ -8,6 +8,10 @@
  *
  * Text is always added as text, never as HTML. Details that come from the
  * API (such as a provider name) can therefore never inject markup into the page.
+ *
+ * The type of what comes back follows the tag name: element('img') gives an
+ * HTMLImageElement, so TypeScript knows it has properties such as src.
+ * HTMLElementTagNameMap is TypeScript's built-in list of tags and their types.
  */
 export function element<Tag extends keyof HTMLElementTagNameMap>(
   tag: Tag,

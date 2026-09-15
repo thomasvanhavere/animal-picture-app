@@ -16,11 +16,11 @@
     "  npm run install:all   install the packages of every service",
     "  npm run build         compile every service",
     "  npm test              run the unit tests of every service",
-    "  npm run test:integration  run the integration tests of every service (needs Docker)",
+    "  npm run test:integration  run the integration tests of the API (needs Docker)",
     "  npm run dev:api       run the API on your machine, restarting on code changes",
     "  npm run dev:ui        run the web page on your machine, reloading on code changes",
     "",
-    "See the 'Building' section in README.md for how to use it."
+    "See the 'Building and testing' section in README.md for how to use it."
   ],
   "name": "animal-picture-app",
   "version": "0.1.0",

@@ -16,7 +16,10 @@
     "target": "ES2022",
 
     // Use the modern "import/export" module system, the way Node.js expects
-    // it for a package with "type": "module".
+    // it for a package with "type": "module". So imports of our own files
+    // end in ".js" ('./app.js') even though the file is app.ts: Node.js runs
+    // the compiled app.js, and tsc knows to read app.ts for it. The web page
+    // (ui/) leaves the extension out, because Vite finds the files itself.
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
 
@@ -51,8 +54,9 @@
     // authors already did that, and it makes the build faster.
     "skipLibCheck": true,
 
-    // Make the test runner's "describe", "it" and "expect" known to the
-    // compiler, so the test files type-check without importing them.
+    // Make known: Node.js's built-in modules and globals (process, ...), and
+    // the test runner's "describe", "it" and "expect", so the test files
+    // type-check without importing them.
     "types": ["node", "vitest/globals"],
 
     // Where the compiled JavaScript goes, and where the source is.

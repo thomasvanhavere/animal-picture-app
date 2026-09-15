@@ -210,7 +210,8 @@ describe('fetching and saving new pictures', () => {
   });
 
   it('answers 502 when the picture service cannot be reached at all', async () => {
-    // Point cats at an address where nothing is listening.
+    // Point cats at an address where nothing is listening. Change a deep copy,
+    // so the shared config the other tests use stays as it is.
     const unreachable = structuredClone(config);
     unreachable.animals.cat!.providerUrlTemplate = 'http://127.0.0.1:1/cat/{width}/{height}';
 

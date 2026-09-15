@@ -6,8 +6,9 @@
  *
  * It lives in its own file (instead of inside main.ts) so the integration
  * tests can build exactly the same app that runs in production, just with a
- * test database and a fake picture service. main.ts only adds what a
- * running server needs on top: connecting, listening and shutting down.
+ * test database and a small local web server in place of the online picture
+ * services (Cataas, Place.dog, ...). main.ts only adds what a running server
+ * needs on top: connecting, listening and shutting down.
  */
 import type { Express } from 'express';
 import type { DataSource } from 'typeorm';

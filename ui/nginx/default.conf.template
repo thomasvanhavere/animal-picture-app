@@ -7,11 +7,12 @@
 #      container (a "reverse proxy"), so the browser only ever talks to one
 #      address and needs no special cross-site settings.
 #
-# This is a TEMPLATE. When the container starts, Nginx replaces ${API_HOST},
-# ${API_PORT} and ${DNS_RESOLVER} with the environment variables of the same
-# name, and writes the result to /etc/nginx/conf.d/default.conf. Nginx's own
-# variables, such as $uri, are left alone because no environment variable
-# has their name.
+# This is a TEMPLATE. Nginx can't read environment variables itself, so when
+# the container starts, a script in the Nginx Docker image (using envsubst)
+# replaces ${API_HOST}, ${API_PORT} and ${DNS_RESOLVER} with the environment
+# variables of the same name, and writes the result to
+# /etc/nginx/conf.d/default.conf. Nginx's own variables, such as $uri, are
+# left alone because no environment variable has their name.
 # =============================================================================
 server {
     # The unprivileged Nginx image runs as a normal user, which can't use
@@ -25,6 +26,7 @@ server {
     server_tokens off;
 
     # Compress text files before sending them; pictures are compressed already.
+    # HTML is always compressed, so only the other text types are listed.
     gzip on;
     gzip_types text/css application/javascript image/svg+xml;
 
@@ -33,6 +35,8 @@ server {
     # other containers by name. Looking the API up there on every request
     # (instead of once at start-up) keeps the page working when the API
     # container is recreated and gets a new address.
+    # valid=10s: trust an answer for at most 10 seconds, then ask again.
+    # ipv6=off: the Docker network has only IPv4 addresses, so skip IPv6.
     resolver ${DNS_RESOLVER} valid=10s ipv6=off;
 
     location /api/ {
@@ -42,6 +46,9 @@ server {
         set $api_address http://${API_HOST}:${API_PORT};
         proxy_pass $api_address;
 
+        # The usual reverse proxy headers: the host name the browser used, the
+        # visitor's IP address (the API would otherwise see only Nginx's) and
+        # http or https. The API doesn't read them yet, but a request log could.
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -57,6 +64,9 @@ server {
     # browser keep them for a year.
     location /assets/ {
         add_header Cache-Control "public, max-age=31536000, immutable";
+        # A missing file gets a plain 404. Answering with index.html, as the
+        # block below does, would hand the browser a web page where it expects
+        # JavaScript or CSS.
         try_files $uri =404;
     }
 

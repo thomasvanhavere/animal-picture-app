@@ -17,6 +17,14 @@ import { BadRequestError } from '../errors/http-error.js';
 import type { AnimalPictureDetails } from './picture.repository.js';
 import type { PictureService } from './picture.service.js';
 
+/**
+ * The handlers are arrow functions, not ordinary methods: picture.routes.ts
+ * hands them to Express on their own (controller.fetchAndSave), and an
+ * ordinary method would lose "this" that way.
+ *
+ * They simply "throw" when something is wrong: Express 5 passes errors from
+ * async handlers on to error-handler.ts, which picks the status code.
+ */
 export class PictureController {
   constructor(private readonly service: PictureService) {}
 
@@ -76,7 +84,11 @@ export class PictureController {
 // These helpers turn that into the one clean value the service expects.
 // ---------------------------------------------------------------------------
 
-/** Takes the first value of a query parameter, or undefined if it isn't there. */
+/**
+ * Takes the first value of a query parameter, trimmed, or undefined if it
+ * isn't there. A blank value (?count=) counts as not there, so it gets the
+ * default instead of an error.
+ */
 function readQueryParam(req: Request, name: string): string | undefined {
   const value = req.query[name];
   const first = Array.isArray(value) ? value[0] : value;

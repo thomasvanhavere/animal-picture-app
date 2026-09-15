@@ -15,8 +15,9 @@
  *   - a swipe, on a touch screen.
  * Going past the last picture wraps around to the first, and the other way round.
  *
- * Screen readers are told this is a carousel, and hear "Picture 2 of 3"
- * whenever the picture changes.
+ * Screen readers are told this is a carousel, and each slide is named
+ * "Picture 2 of 3". The counter ("2 / 3") is read out whenever the picture
+ * changes.
  */
 import type { PictureDetails } from '../api/picture-api';
 import { element } from './dom';
@@ -25,6 +26,11 @@ import { createPictureCard } from './picture-card';
 /** How far (in pixels) a finger must move sideways to count as a swipe. */
 const SWIPE_DISTANCE = 40;
 
+/**
+ * Builds a carousel of the given pictures, showing the first one.
+ * Needs at least one picture. app.ts only uses it for two or more, and shows
+ * a single picture as a plain card.
+ */
 export function createCarousel(pictures: PictureDetails[]): HTMLElement {
   let current = 0;
 
@@ -74,6 +80,9 @@ export function createCarousel(pictures: PictureDetails[]): HTMLElement {
 
   /** Shows the picture at the given position, wrapping around at both ends. */
   function show(index: number): void {
+    // In JavaScript, % can give a negative result (-1 % 3 is -1), so the
+    // length is added first: -1 becomes the last picture, and one past the
+    // last becomes 0.
     current = (index + pictures.length) % pictures.length;
 
     track.style.transform = `translateX(-${current * 100}%)`;

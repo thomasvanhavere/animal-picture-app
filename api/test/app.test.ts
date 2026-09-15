@@ -37,7 +37,11 @@ const expectedJson = {
   url: '/api/pictures/7',
 };
 
-/** A fake service that records how it was called and answers with the picture above. */
+/**
+ * Builds the app around a fake service that records how it was called (in
+ * "calls") and answers with the picture above. With { databaseUp: false } the
+ * database check fails, so /health reports "degraded".
+ */
 function makeApp(options: { databaseUp?: boolean } = {}) {
   const calls: unknown[][] = [];
   const service = {

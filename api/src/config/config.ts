@@ -95,7 +95,7 @@ export function loadConfig(env: Env = process.env): Config {
     port: readInteger(env, 'API_PORT', { fallback: 3000, min: 1, max: 65535 }),
     enabledAnimals,
     defaultAnimal: readDefaultAnimal(env, enabledAnimals),
-    pictureSizeVariation: readInteger(env, 'PICTURE_SIZE_VARIATION', { fallback: 0, min: 0 }),
+    pictureSizeVariation: readInteger(env, 'PICTURE_SIZE_VARIATION', { fallback: 50, min: 0 }),
     maxPicturesPerRequest: readInteger(env, 'MAX_PICTURES_PER_REQUEST', { fallback: 10, min: 1 }),
     downloadTimeoutMs: readInteger(env, 'DOWNLOAD_TIMEOUT_MS', { fallback: 10_000, min: 1 }),
     animals,
@@ -116,6 +116,8 @@ export function loadConfig(env: Env = process.env): Config {
 /** Reads ENABLED_ANIMALS, a comma-separated list such as "cat,dog,bear". */
 function readEnabledAnimals(env: Env): Animal[] {
   const raw = readText(env, 'ENABLED_ANIMALS');
+  // filter(Boolean) drops empty entries, so "cat,,dog" or a trailing comma
+  // don't cause an error.
   const names = raw.split(',').map((name) => name.trim().toLowerCase()).filter(Boolean);
 
   if (names.length === 0) {
@@ -195,8 +197,9 @@ function readText(env: Env, name: string): string {
 }
 
 /**
- * Reads a whole number, with optional limits and an optional fallback for
- * when the setting is absent. Empty or non-numeric values are rejected.
+ * Reads a whole number, with optional limits. When the setting is absent or
+ * empty, the fallback is used if there is one; otherwise that is an error.
+ * Anything that isn't a whole number is always rejected.
  */
 function readInteger(
   env: Env,

@@ -16,12 +16,19 @@
 import type { PictureDetails } from '../api/picture-api';
 import { element } from './dom';
 
+/**
+ * Builds the card for one picture: the picture with its caption below.
+ * With lazy, the browser may wait to download the picture until it is about
+ * to be seen.
+ */
 export function createPictureCard(picture: PictureDetails, options: { lazy?: boolean } = {}): HTMLElement {
   const image = element('img', {
     src: picture.url,
     alt: `A random ${picture.animal} picture from ${picture.provider}`,
     // Carousel slides that aren't shown yet can load later.
     loading: options.lazy ? 'lazy' : 'eager',
+    // Lets the browser decode the picture in the background, instead of
+    // holding up the rest of the page while it does.
     decoding: 'async',
   });
 

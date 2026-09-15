@@ -13,5 +13,7 @@ export const DEFAULT_ANIMAL_CHOICE: AnimalChoice = 'random';
 /** Which animal is selected in the picker. */
 export function readAnimalChoice(picker: HTMLFieldSetElement): AnimalChoice {
   const selected = picker.querySelector<HTMLInputElement>('input[name="animal"]:checked')?.value;
+  // The value comes from index.html, which TypeScript can't check, so it is
+  // only used if it is one of the known choices.
   return ANIMAL_CHOICES.find((choice) => choice === selected) ?? DEFAULT_ANIMAL_CHOICE;
 }

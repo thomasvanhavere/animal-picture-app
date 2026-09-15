@@ -1,5 +1,10 @@
 /**
  * carousel.test.ts : tests for the carousel of fetched pictures
+ *
+ * Each test builds a carousel from a few made-up pictures (no API involved)
+ * and puts it into a fake browser page (jsdom). Then it uses the carousel like
+ * a person would (click the arrows and dots, press the arrow keys, swipe) and
+ * checks which picture is shown and what screen readers are told.
  */
 import type { PictureDetails } from '../src/api/picture-api';
 import { createCarousel } from '../src/components/carousel';
@@ -69,6 +74,8 @@ describe('createCarousel', () => {
 
     view.click('.carousel-previous');
     expect(view.shownIndex()).toBe(0);
+    // Not a typo: "-0%" is what the carousel writes for the first slide, and
+    // it means the same as 0%.
     expect(view.track().style.transform).toBe('translateX(-0%)');
   });
 
@@ -104,6 +111,8 @@ describe('createCarousel', () => {
 
   it('moves with a swipe', () => {
     const view = makeCarousel([picture(1), picture(2), picture(3)]);
+    // A MouseEvent works as well as a PointerEvent here: the carousel only
+    // reads clientX, which both have.
     const swipe = (fromX: number, toX: number) => {
       view.track().dispatchEvent(new MouseEvent('pointerdown', { clientX: fromX }));
       view.track().dispatchEvent(new MouseEvent('pointerup', { clientX: toX }));

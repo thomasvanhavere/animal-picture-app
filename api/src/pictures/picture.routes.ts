@@ -10,6 +10,7 @@
 import { Router } from 'express';
 import type { PictureController } from './picture.controller.js';
 
+/** Builds the router, sending each request to a method of the given controller. */
 export function createPictureRouter(controller: PictureController): Router {
   const router = Router();
 

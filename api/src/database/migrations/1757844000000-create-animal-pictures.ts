@@ -6,9 +6,11 @@
  * called "migrations"), so each one runs exactly once, no matter how often
  * the app is restarted.
  *
- * The number at the start of the file name is a timestamp. It puts the
- * migrations in order when there are several. Future changes to the table
- * (a new column, for example) get their own, newer migration file.
+ * The number is a timestamp (milliseconds since 1970). TypeORM reads it from
+ * the end of the migration's `name` below and runs migrations oldest first;
+ * the file name starts with it only to keep the files in the same order.
+ * Future changes to the table (a new column, for example) get their own,
+ * newer migration, which must also be added to the list in data-source.ts.
  *
  * "up" applies the change, "down" undoes it.
  */
@@ -33,9 +35,10 @@ export class CreateAnimalPictures1757844000000 implements MigrationInterface {
       )
     `);
 
-    // The "latest picture" request always asks: "newest row, optionally for
-    // one animal". This index lets the database answer that without reading
-    // the whole table.
+    // This index speeds up "newest picture of one animal" (WHERE animal = ...
+    // ORDER BY created_at DESC). The API never asks that: its "latest picture"
+    // is of any animal, and this index can't help with that, because it is
+    // sorted by animal first.
     await queryRunner.query(`
       CREATE INDEX "idx_animal_pictures_animal_created_at"
         ON "animal_pictures" ("animal", "created_at" DESC)

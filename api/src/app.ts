@@ -19,11 +19,13 @@ import { createPictureRouter } from './pictures/picture.routes.js';
 import type { PictureService } from './pictures/picture.service.js';
 import { requestLogger } from './request-logger.js';
 
+/** The parts createApp is given, instead of creating them itself. */
 export interface AppDependencies {
   pictureService: PictureService;
   checkDatabase: DatabaseCheck;
 }
 
+/** Builds the Express app around the given dependencies. */
 export function createApp({ pictureService, checkDatabase }: AppDependencies): Express {
   const app = express();
 

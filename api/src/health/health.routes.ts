@@ -14,6 +14,10 @@ import { Router } from 'express';
 /** A function that resolves if the database answers, and throws if it doesn't. */
 export type DatabaseCheck = () => Promise<void>;
 
+/**
+ * Builds the router, given a way to check the database. app.ts mounts it at
+ * /health, so the "/" below means GET /health.
+ */
 export function createHealthRouter(checkDatabase: DatabaseCheck): Router {
   const router = Router();
 

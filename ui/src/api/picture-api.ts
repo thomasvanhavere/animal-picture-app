@@ -44,6 +44,10 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * The calls the page makes to the API. app.ts only relies on this interface,
+ * so the tests can pass in a fake instead of the real client.
+ */
 export interface PictureApi {
   /**
    * Asks the API to download and save pictures.

@@ -46,7 +46,8 @@ async function main(): Promise<void> {
 
   // Clean shutdown. Docker sends SIGTERM when stopping a container; without
   // this, requests in progress would be cut off and the database connection
-  // left hanging.
+  // left hanging. SIGINT is what Ctrl+C sends, for example to stop
+  // "npm run dev:api".
   const shutdown = (signal: string) => {
     console.log(`Received ${signal}, shutting down ...`);
     server.close(async () => {

@@ -36,8 +36,11 @@ services:
       - "${UI_PORT:-8080}:8080"
     depends_on:
       # The page is of little use without the API, so wait until it's healthy.
+      # The API's health check is in api/Dockerfile: it calls GET /health.
       animal-picture-api:
         condition: service_healthy
+    # If a container stops on its own (a crash, say) or Docker restarts, start
+    # it again, unless you stopped it yourself. Every service does the same.
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -53,9 +56,12 @@ services:
       - path: .env
         required: false
     # ... but override the database address: inside Docker, the database is
-    # reached by its service name, not by "localhost".
+    # reached by its service name, not by "localhost", and always on port
+    # 5432. DATABASE_PORT only changes the port opened on your machine (see
+    # the database service below).
     environment:
       DATABASE_HOST: animal-picture-database
+      DATABASE_PORT: 5432
     ports:
       # host port : container port. Open http://localhost:3000 on your machine.
       - "${API_PORT:-3000}:${API_PORT:-3000}"

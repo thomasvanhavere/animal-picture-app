@@ -26,7 +26,9 @@ export function createDataSource(database: DatabaseConfig): DataSource {
     // Every table the app uses.
     entities: [AnimalPicture],
 
-    // Every change to the database structure, in order.
+    // Every change to the database structure. TypeORM doesn't look in the
+    // migrations/ folder, so a new migration must be added here. They run in
+    // the order of the timestamp in their name, not the order of this list.
     migrations: [CreateAnimalPictures1757844000000],
 
     // Never let TypeORM change the table structure on its own by comparing

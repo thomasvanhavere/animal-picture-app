@@ -9,6 +9,9 @@
   // ==========================================================================
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    // Compile src/main.ts to dist/main.js, where package.json ("main") and
+    // the Dockerfile look for it. tsconfig.json's rootDir "." (needed to also
+    // cover test/) would put it at dist/src/main.js instead.
     "rootDir": "src"
   },
   "include": ["src"]

@@ -40,7 +40,8 @@ ENV API_HOST=animal-picture-api \
     API_PORT=3000 \
     DNS_RESOLVER=127.0.0.11
 
-# Nginx turns this template into its real settings file when it starts.
+# When the container starts, a script in the Nginx image fills in this
+# template's ${...} values and writes the real settings file.
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 
 # The built page.

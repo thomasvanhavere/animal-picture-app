@@ -8,7 +8,7 @@ It's written in **TypeScript**, built with **npm**, and runs in **Docker
 containers**.
 
 > **Status:** all planned steps are done: the API, the database, the web page
-> and the automated tests. See the [Roadmap](#roadmap) for ideas for later.
+> and the automated tests.
 >
 > **Source code:** https://github.com/thomasvanhavere/animal-picture-app
 
@@ -98,6 +98,7 @@ After `npm run install:all`, from the project folder:
 | The page says the API is not available | Check the API is running: `docker compose ps` (Option A) or terminal 1 (Option B). |
 | `Configuration error: … is not set` | A setting in your `.env` is empty or misspelled. Fix it, or delete `.env` to use the defaults. |
 | `docker` command not found or cannot connect | Start Docker Desktop and wait until it's running. |
+| `password authentication failed` or `database "…" does not exist` | You changed `DATABASE_NAME`, `DATABASE_USER` or `DATABASE_PASSWORD` after the database was created. Put the old values back, or run `docker compose down -v` (deletes the saved pictures). |
 
 The rest of this README explains everything in more detail.
 
@@ -124,8 +125,8 @@ The rest of this README explains everything in more detail.
    random picture of a cat, dog or bear, downloads it, and saves it in the
    database. You can say which animal you want (or a random one) and how
    many pictures (one, if you don't say). A request saves all its pictures or
-   none. Which service to use and what size the pictures are
-   is set with environment variables.
+   none. The service to use and the picture size are set with environment
+   variables.
 2. **Keep them in a database.** Every picture is stored in a PostgreSQL
    database, in one table called `animal_pictures`. The picture file itself
    is saved there too, not just a link to it, so a saved picture stays
@@ -184,6 +185,10 @@ its own container and has one clear job.
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
+Not drawn: the API downloads the pictures from free services on the internet
+(Cataas, Place.dog and PlaceBear). And with `npm run dev:ui`, Vite's
+development server passes `/api` on to the API instead of Nginx.
+
 | Service | Job | Built with |
 |---|---|---|
 | **animal-picture-ui** | Shows the web page. Passes every `/api/...` request on to the API, so the browser only ever talks to one address. | TypeScript, Vite, Nginx |
@@ -225,10 +230,14 @@ animal-picture-app/
 ├── api/                 The REST API service
 │   ├── package.json     Its own packages and commands
 │   ├── Dockerfile       How to build its container image
+│   ├── .dockerignore    Files Docker leaves out of the build (packages, tests, secrets, ...)
+│   ├── tsconfig.json    TypeScript settings; tsconfig.build.json builds only src/ with them
+│   ├── vitest.config.ts Unit test settings; integration tests use vitest.integration.config.ts
 │   ├── postman/         A Postman collection with every request, for trying the API by hand
 │   ├── src/
 │   │   ├── main.ts               Starting point: reads settings, connects, starts listening
 │   │   ├── app.ts                Wires the pieces into one Express app
+│   │   ├── request-logger.ts     Writes one line to the log for every request
 │   │   ├── application.ts        Builds the complete app from the settings and the database
 │   │   ├── config/               Reads and checks the settings; the animal and service lists
 │   │   ├── database/             The picture table (entity), the connection, the migrations
@@ -236,21 +245,24 @@ animal-picture-app/
 │   │   ├── health/               The GET /health endpoint
 │   │   └── errors/               Error types and the central error handler
 │   └── test/                     Unit tests, one file per piece
+│       ├── setup.ts              Loads reflect-metadata, which TypeORM needs, before the tests
 │       └── integration/          Tests against a real database and the whole running API
 │           └── helpers/          The test database connection and a fake picture service
 │
 └── ui/                  The web page service
     ├── package.json     Its own packages and commands
     ├── Dockerfile       How to build its container image (the page, served by Nginx)
+    ├── .dockerignore    Files Docker leaves out of the build (packages, tests, secrets, ...)
     ├── nginx/           Nginx settings: serve the page, pass /api on to the API
     ├── vite.config.ts   Build and test settings; passes /api on to the API in development
+    ├── tsconfig.json    TypeScript settings for checking the types; Vite does the building
     ├── index.html       The page's structure
     ├── public/          Files served as they are (the page icon)
     ├── src/
     │   ├── main.ts               Starting point: starts the page with the real API
     │   ├── app.ts                The page's behaviour: latest picture, fetch button, results
     │   ├── api/                  Talks to the API
-    │   ├── components/           The picture card, the carousel, the animal choice and the "How many" box
+    │   ├── components/           The picture card, the carousel, the animal choice and the "#Pictures" box
     │   └── styles.css            How the page looks
     └── test/                     Automated tests, run in a simulated browser page
 ```
@@ -258,7 +270,8 @@ animal-picture-app/
 ### How the API code is layered
 
 A request travels down through these layers and the answer travels back up.
-Each layer only knows the one below it:
+Each layer only knows the one below it, except the service, which uses both
+the repository and the downloader:
 
 ```
 routes       which address leads to which controller method     picture.routes.ts
@@ -321,6 +334,11 @@ A setting in `.env` wins over its default. `.env` is ignored by Git, so
 personal settings and passwords stay on your machine. After changing it,
 restart with `docker compose up -d`.
 
+One exception: PostgreSQL only reads `DATABASE_NAME`, `DATABASE_USER` and
+`DATABASE_PASSWORD` while its data volume is still empty, to create the
+database and user. To change them later, first run `docker compose down -v`,
+which deletes the saved pictures.
+
 ### Picture services
 
 Each animal gets its pictures from a picture service. You select it with
@@ -366,7 +384,7 @@ animal each time. Set it to `0` for exact sizes.
 | `API_PORT` | The port the API listens on | `3000` |
 | `MAX_PICTURES_PER_REQUEST` | The most pictures one request may fetch | `10` |
 | `DOWNLOAD_TIMEOUT_MS` | How long to wait for a picture service, in milliseconds | `10000` |
-| `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` | Where the database is and how to log in | see `.env.defaults` |
+| `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` | Where the database is and how to log in. In Docker, the API always uses port 5432, so `DATABASE_PORT` only changes the port opened on your machine. | see `.env.defaults` |
 
 When the API starts, it checks every setting. If a value is misspelled or
 missing, it stops right away and says which setting is wrong.
@@ -377,6 +395,10 @@ More free picture services are listed at
 [public-apis](https://github.com/public-apis/public-apis) under *Animals*. The
 bottom of `.env.defaults` explains step by step how to add a new service or a
 new animal.
+
+To choose a new animal on the web page too, add it to `ANIMAL_CHOICES` in
+`ui/src/api/picture-api.ts` and as a radio button in `ui/index.html`. Its badge
+colour (`--color-<animal>` and `.animal-<animal>`) is in `ui/src/styles.css`.
 
 ---
 
@@ -417,9 +439,9 @@ http://localhost:3000/health; you should see `{"status":"ok","database":"up"}`.
 
 ### Looking inside the database
 
-The database is reachable from your machine on port 5432 (user, password and
-database name as in `.env.defaults`, unless you changed them in `.env`). To
-run a quick query without any tools:
+The database is reachable from your machine on port 5432, or on your
+`DATABASE_PORT` (user, password and database name as in `.env.defaults`,
+unless you changed them in `.env`). To run a quick query without any tools:
 
 ```sh
 docker exec animal-picture-database psql -U animal_picture_user -d animal_picture_database \
@@ -464,7 +486,7 @@ The page at http://localhost:8080 has two parts.
   or **Bear**. With Random, each picture gets its own random animal,
   whatever `DEFAULT_ANIMAL` says. Choosing an animal that is switched off in
   `ENABLED_ANIMALS` shows the API's error message.
-- **How many** is a number box that starts at 1. It only accepts whole
+- **#Pictures** is a number box that starts at 1. It only accepts whole
   numbers: keys like `-`, `e` or `.` do nothing, pasted text is cleaned up
   (`-5` becomes `5`), and an empty box or `0` goes back to 1 when you leave it.
   A note underneath ("Max. 10 pictures") says how many can be fetched at once, the
@@ -628,19 +650,21 @@ commands are for working on the code. Run them from the project root:
 | `npm run install:all` | Install the packages of every service |
 | `npm run build` | Build every service: the API into `api/dist/`, the web page into `ui/dist/` |
 | `npm test` | Run the unit tests of every service |
-| `npm run test:integration` | Run the integration tests of every service (needs Docker) |
+| `npm run test:integration` | Run the API's integration tests against a real database (needs Docker); the web page has none |
 | `npm run dev:api` | Run the API on your machine, restarting on every change |
 | `npm run dev:ui` | Run the web page on your machine, reloading on every change |
 
 Inside the `api/` and `ui/` folders, `npm run typecheck` checks the types
-without producing files.
+without producing files. In `api/`, `npm run test:all` runs the unit and
+integration tests together. In `ui/`, `npm run preview` serves the built
+`dist/` folder, to try the build.
 
 ### The tests
 
 The API has two kinds of automated tests, and the web page has its own.
 
 **Unit tests** (`npm test`) live in `api/test/`, one file per piece of the
-code. They need no database and no internet: the piece s around the code under
+code. They need no database and no internet: the pieces around the code under
 test are replaced by small fakes, so the tests run in well under a second.
 
 | File | What it checks |
@@ -676,7 +700,7 @@ a fake API, so no server is needed.
 
 | File | What it checks |
 |---|---|
-| `count-input.test.ts` | The "How many" box refuses anything but whole numbers of 1 or more |
+| `count-input.test.ts` | The "#Pictures" box refuses anything but whole numbers of 1 or more |
 | `carousel.test.ts` | The carousel moves with buttons, dots, arrow keys and swipes, and wraps around |
 | `picture-api.test.ts` | The right requests are sent, and error answers become readable messages |
 | `app.test.ts` | The real `index.html`, used like a person would: latest picture, choosing an animal, fetching one or several pictures, the busy state, and errors |

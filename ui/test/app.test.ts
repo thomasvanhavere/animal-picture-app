@@ -82,7 +82,7 @@ function openPage(api: PictureApi) {
 
   return {
     ...page,
-    /** Fills in the "How many" box the way typing does. */
+    /** Fills in the "#Pictures" box the way typing does. */
     typeCount(value: string) {
       page.countInput.value = value;
       page.countInput.dispatchEvent(new Event('input'));
@@ -139,7 +139,7 @@ describe('when the page opens', () => {
     expect(page.fetchedPictures.textContent).toBe('Pictures you fetch will appear here.');
   });
 
-  it('says under the "How many" box that at most 10 pictures can be fetched', () => {
+  it('says under the "#Pictures" box that at most 10 pictures can be fetched', () => {
     const page = openPage(fakeApi().api);
 
     const hintId = page.countInput.getAttribute('aria-describedby')!;
@@ -221,6 +221,8 @@ describe('fetching pictures', () => {
     await vi.waitFor(() => expect(fake.fetchRequests).toEqual([['random', 1]]));
 
     page.typeCount('0');
+    // The first fetch may still be finishing, and a press on the disabled
+    // button would do nothing. Wait until it can be pressed again.
     await vi.waitFor(() => expect(page.fetchButton.disabled).toBe(false));
     page.pressFetch();
     await vi.waitFor(() =>

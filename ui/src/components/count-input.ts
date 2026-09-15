@@ -1,5 +1,5 @@
 /**
- * count-input.ts : the "How many" box, which only accepts whole numbers of 1 or more
+ * count-input.ts : the "#Pictures" box, which only accepts whole numbers of 1 or more
  *
  * A number box (<input type="number" min="1">) alone isn't strict enough:
  * browsers still let you type "-", "e" or ".", paste "-5", or leave it

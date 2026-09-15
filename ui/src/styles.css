@@ -26,6 +26,9 @@
   --shadow: 0 1px 2px rgb(43 37 32 / 6%), 0 8px 24px rgb(43 37 32 / 6%);
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
 
+  /* Lets the parts the browser draws itself (such as scrollbars and the number
+     box's arrows) turn dark in dark mode too. index.html repeats this in a
+     <meta> tag, so it applies before this file has loaded. */
   color-scheme: light dark;
 }
 
@@ -67,6 +70,7 @@ body {
 }
 
 .site-header {
+  /* Same width as .layout below, so the title lines up with the panels. */
   max-width: 1120px;
   margin: 0 auto;
   padding: 40px 0 24px;
@@ -123,9 +127,11 @@ body {
 
 /* --- The form ------------------------------------------------------------------ */
 
-/* The controls line up at the top, not the bottom, because the "How many"
-   box has a hint underneath that the others don't. */
+/* The controls line up at the top, not the bottom, because the number box
+   (labelled "#Pictures") has a hint underneath that the others don't. */
 .fetch-form {
+  /* The height of a .field label: its 0.875rem font size times the body's 1.5
+     line height, plus the 4px gap below it. Update it if any of those change. */
   --label-height: calc(0.875rem * 1.5 + 4px);
   display: flex;
   flex-wrap: wrap;
@@ -137,6 +143,8 @@ body {
    selected one raised. The round radio circles themselves are hidden, but
    still there, so keyboards and screen readers use them as normal. */
 .animal-picker {
+  /* Browsers give a <fieldset> a minimum width set by its content. 0 removes
+     it, so the fieldset can always shrink along with the form. */
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -182,6 +190,9 @@ body {
   color: var(--color-text);
 }
 
+/* "input + label" only matches the label right after its input, so in
+   index.html each <input> must stay directly before its <label>, or the
+   styles below stop working. */
 .segmented input:checked + label {
   background: var(--color-surface);
   color: var(--color-text);
@@ -261,6 +272,7 @@ body {
 }
 
 .status {
+  /* Keeps one line free, so the page doesn't jump when a message comes or goes. */
   min-height: 1.5em;
   margin: 12px 0;
   color: var(--color-text-muted);
@@ -290,6 +302,8 @@ body {
 .picture-frame img {
   width: 100%;
   height: 100%;
+  /* "contain" shows the whole animal, with some empty frame around it if the
+     shapes differ; "cover" would fill the frame but crop the picture. */
   object-fit: contain;
   display: block;
 }
@@ -332,6 +346,8 @@ body {
 /* --- The carousel --------------------------------------------------------------- */
 
 .carousel {
+  /* The carousel can get keyboard focus (see carousel.ts). Its focus outline
+     follows this radius, so it gets the same rounded corners as the panels. */
   border-radius: var(--radius);
 }
 
@@ -357,7 +373,8 @@ body {
 
 .carousel-arrow {
   position: absolute;
-  /* Centred on the picture, not on picture + caption. */
+  /* Centred on the picture, not on picture + caption: 2.5rem is roughly the
+     height of a one-line caption (see .picture-caption). */
   top: calc((100% - 2.5rem) / 2);
   transform: translateY(-50%);
   display: grid;
@@ -421,6 +438,9 @@ body {
   transition: background-color 0.15s, transform 0.15s;
 }
 
+/* carousel.ts marks the current dot with aria-current, for screen readers.
+   Styling on that attribute means there's no separate "active" class to
+   keep in step. */
 .carousel-dot[aria-current='true']::after {
   background: var(--color-accent);
   transform: scale(1.2);
@@ -429,6 +449,7 @@ body {
 .carousel-counter {
   margin: 0;
   font-size: 0.875rem;
+  /* All digits get the same width, so "1 / 10" doesn't shift as it counts. */
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
 }

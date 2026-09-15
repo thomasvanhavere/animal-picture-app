@@ -8,11 +8,15 @@
  *     few small files in dist/, which Nginx serves in the Docker container.
  */
 import { loadEnv } from 'vite';
+// Vitest's defineConfig, not Vite's, so the "test" section below is
+// type-checked too; Vite's own version doesn't know that section.
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig(({ mode }) => {
   // Read the project's .env file (one folder up), if there is one, to find
-  // the API's port. Without it, the default port from .env.defaults is used.
+  // the API's port. The '' turns off Vite's usual filter, which only keeps
+  // settings starting with VITE_. Vite doesn't read .env.defaults, so keep
+  // the 3000 below equal to API_PORT there.
   const env = loadEnv(mode, '..', '');
   const apiPort = env['API_PORT'] || '3000';
 

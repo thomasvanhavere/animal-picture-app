@@ -2,10 +2,10 @@
 # Dockerfile for animal-picture-api
 #
 # Builds a small container image that runs the API. It works in three
-# "stages". Each stage starts from a clean image and only the result of the
-# last one is kept, so the final image contains the compiled code and the
-# packages it needs at runtime, but no TypeScript compiler, no tests and no
-# development tools.
+# "stages". Stage 2 builds on stage 1; stage 3 starts from a clean image and
+# copies in only the results, so the final image contains the compiled code
+# and the packages it needs at runtime, but no TypeScript compiler, no tests
+# and no development tools.
 #
 # Build it by hand with:   docker build -t animal-picture-api ./api
 # Normally docker-compose.yml does this for you.
@@ -61,7 +61,13 @@ EXPOSE 3000
 
 # Every 30 seconds, ask the API if it's healthy. Docker shows the result in
 # "docker ps", and Compose waits for "healthy" before starting the UI.
+# Failures in the first 15 seconds don't count (--start-period), giving the
+# API time to connect to the database and apply its migrations. After 3
+# failed checks in a row, each allowed 5 seconds to answer, it is "unhealthy".
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node -e "fetch('http://localhost:' + (process.env.API_PORT || 3000) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
+# Start Node.js directly, not through "npm start" or a shell (this JSON form
+# avoids one). Node.js is then the container's main process, so Docker's stop
+# signal (SIGTERM) reaches the app itself and main.ts can shut down cleanly.
 CMD ["node", "dist/main.js"]
