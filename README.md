@@ -25,7 +25,7 @@ cd animal-picture-app
 
 No settings file is needed: the defaults in `.env.defaults` are used.
 
-### Option A: with Docker (easiest)
+### Option A: with Docker
 
 **You need:** Docker Desktop (running) and Git.
 
