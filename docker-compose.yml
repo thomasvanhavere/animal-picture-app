@@ -1,0 +1,90 @@
+# =============================================================================
+# docker-compose.yml : starts the whole application on your machine
+#
+#   docker compose up --build       start everything (and rebuild the images)
+#   docker compose down             stop everything, keep the saved pictures
+#   docker compose down -v          stop everything AND delete the saved pictures
+#
+# Settings come from the ".env" file next to this file (copy .env.example to
+# get one). Compose reads it automatically, both to fill in the ${...}
+# values below and to pass every setting on to the API container.
+#
+# Services (each one is a separate container):
+#   animal-picture-ui         the web page, at http://localhost:8080
+#   animal-picture-api        the TypeScript REST API
+#   animal-picture-database   PostgreSQL, where the pictures are stored
+# =============================================================================
+services:
+
+  # ---------------------------------------------------------------------------
+  # The web page
+  # ---------------------------------------------------------------------------
+  animal-picture-ui:
+    build: ./ui
+    container_name: animal-picture-ui
+    environment:
+      # Where Nginx passes the /api requests on to: the API container, by its
+      # service name, on the port the API listens on.
+      API_HOST: animal-picture-api
+      API_PORT: ${API_PORT:-3000}
+    ports:
+      # host port : container port. Open http://localhost:8080 on your machine.
+      - "${UI_PORT:-8080}:8080"
+    depends_on:
+      # The page is of little use without the API, so wait until it's healthy.
+      animal-picture-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # The REST API
+  # ---------------------------------------------------------------------------
+  animal-picture-api:
+    build: ./api
+    container_name: animal-picture-api
+    # Give the container every setting from .env ...
+    env_file: .env
+    # ... but override the database address: inside Docker, the database is
+    # reached by its service name, not by "localhost".
+    environment:
+      DATABASE_HOST: animal-picture-database
+    ports:
+      # host port : container port. Open http://localhost:3000 on your machine.
+      - "${API_PORT:-3000}:${API_PORT:-3000}"
+    depends_on:
+      # Don't start the API until the database has answered its health check.
+      animal-picture-database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # The database
+  # ---------------------------------------------------------------------------
+  animal-picture-database:
+    image: postgres:17-alpine
+    container_name: animal-picture-database
+    environment:
+      # PostgreSQL creates this user and database the first time it starts.
+      # The values are the same DATABASE_* settings the API uses.
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      # Optional: lets you look at the data with a database tool on your machine.
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      # Keep the data in a named Docker volume, so it survives restarts and
+      # rebuilds. "docker compose down -v" deletes it.
+      - animal-picture-data:/var/lib/postgresql/data
+    healthcheck:
+      # "pg_isready" is a small tool that ships with PostgreSQL and reports
+      # whether the server accepts connections.
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+# The storage area for the database, managed by Docker.
+volumes:
+  animal-picture-data:

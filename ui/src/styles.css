@@ -1,0 +1,362 @@
+/*
+ * styles.css : how the page looks
+ *
+ * All colours and sizes are set once, as "custom properties" (the --names
+ * below), and used everywhere else. Changing the look means changing them
+ * here. The second block swaps the colours for a dark version when the
+ * visitor's system is set to dark mode.
+ */
+
+:root {
+  --color-background: #faf7f2;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1ece4;
+  --color-border: #e4ddd2;
+  --color-text: #2b2520;
+  --color-text-muted: #6f655c;
+  --color-accent: #c2410c;
+  --color-accent-hover: #9a3412;
+  --color-accent-text: #ffffff;
+  --color-error: #b91c1c;
+  --color-cat: #fde7d4;
+  --color-dog: #dcebd9;
+  --color-bear: #e6dccf;
+
+  --radius: 14px;
+  --shadow: 0 1px 2px rgb(43 37 32 / 6%), 0 8px 24px rgb(43 37 32 / 6%);
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #1a1714;
+    --color-surface: #24201c;
+    --color-surface-muted: #2e2924;
+    --color-border: #3a342e;
+    --color-text: #f3eee8;
+    --color-text-muted: #b3a89c;
+    --color-accent: #f97316;
+    --color-accent-hover: #fb923c;
+    --color-accent-text: #1a1714;
+    --color-error: #f87171;
+    --color-cat: #4a3526;
+    --color-dog: #2f4030;
+    --color-bear: #3f362c;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 25%);
+  }
+}
+
+/* --- The page as a whole ---------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0 16px 48px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.site-header {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 0 24px;
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+}
+
+/* Two columns on wide screens: fetching on the left, the latest picture on
+   the right. On narrow screens (phones) they are stacked. */
+.layout {
+  display: grid;
+  gap: 24px;
+  max-width: 1120px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.panel h2 {
+  margin: 0 0 16px;
+  font-size: 1.125rem;
+}
+
+.placeholder {
+  margin: 0;
+  padding: 48px 16px;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* --- The form ------------------------------------------------------------------ */
+
+.fetch-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.field input {
+  width: 7rem;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.button {
+  padding: 11px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.button:disabled,
+.field input:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.status {
+  min-height: 1.5em;
+  margin: 12px 0;
+  color: var(--color-text-muted);
+}
+
+.status-error {
+  color: var(--color-error);
+}
+
+/* --- A picture with its caption ----------------------------------------------- */
+
+.picture-card {
+  margin: 0;
+}
+
+/* Every picture gets the same shape of frame, so the page doesn't jump
+   while pictures load and all carousel slides line up. */
+.picture-frame {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--color-surface-muted);
+}
+
+.picture-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.picture-missing {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.picture-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 10px;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.animal-badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.animal-cat {
+  background: var(--color-cat);
+}
+
+.animal-dog {
+  background: var(--color-dog);
+}
+
+.animal-bear {
+  background: var(--color-bear);
+}
+
+/* --- The carousel --------------------------------------------------------------- */
+
+.carousel {
+  border-radius: var(--radius);
+}
+
+.carousel-viewport {
+  position: relative;
+  overflow: hidden;
+}
+
+.carousel-track {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transition: transform 0.35s ease;
+  /* Let the page handle vertical scrolling, and the carousel horizontal swipes. */
+  touch-action: pan-y;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+.carousel-arrow {
+  position: absolute;
+  /* Centred on the picture, not on picture + caption. */
+  top: calc((100% - 2.5rem) / 2);
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 45%);
+  color: #fff;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.carousel-arrow:hover {
+  background: rgb(0 0 0 / 65%);
+}
+
+.carousel-previous {
+  left: 10px;
+}
+
+.carousel-next {
+  right: 10px;
+}
+
+.carousel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.carousel-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* The dot itself is small, but the button around it is big enough to tap. */
+.carousel-dot {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.carousel-dot::after {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: auto;
+  border-radius: 50%;
+  background: var(--color-border);
+  transition: background-color 0.15s, transform 0.15s;
+}
+
+.carousel-dot[aria-current='true']::after {
+  background: var(--color-accent);
+  transform: scale(1.2);
+}
+
+.carousel-counter {
+  margin: 0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* Visitors who asked their system for less motion get no sliding. */
+@media (prefers-reduced-motion: reduce) {
+  .carousel-track,
+  .button,
+  .carousel-dot::after {
+    transition: none;
+  }
+}

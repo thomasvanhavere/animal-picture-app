@@ -1,0 +1,53 @@
+{
+  "//": [
+    "package.json for the animal-picture-api service.",
+    "",
+    "This is the microservice that downloads animal pictures, saves them in",
+    "the database and hands them back out over a REST API.",
+    "",
+    "Commands (run from this folder, or from the root with 'npm run <name> -w api'):",
+    "  npm run dev      start the API on your machine and restart it on every code change",
+    "  npm run build    compile the TypeScript in src/ to JavaScript in dist/",
+    "  npm start        run the compiled JavaScript (this is what Docker does)",
+    "  npm test         run the unit tests once (fast, no database needed)",
+    "  npm run test:integration  run the integration tests against a real database (needs Docker)",
+    "  npm run test:all run both",
+    "  npm run typecheck  check the types without producing files"
+  ],
+  "name": "animal-picture-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "REST API that downloads random animal pictures, stores them in PostgreSQL and serves the latest one.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "dist/main.js",
+  "engines": {
+    "node": ">=24.0.0 <25.0.0",
+    "npm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch --env-file=../.env src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:all": "npm test && npm run test:integration"
+  },
+  "dependencies": {
+    "express": "5.2.1",
+    "pg": "8.23.0",
+    "reflect-metadata": "0.2.2",
+    "typeorm": "1.1.1"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "12.1.0",
+    "@types/express": "5.0.6",
+    "@types/node": "24.13.4",
+    "@types/supertest": "7.2.1",
+    "supertest": "7.2.2",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}

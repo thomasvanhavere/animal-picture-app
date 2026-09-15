@@ -1,0 +1,37 @@
+# =============================================================================
+# .gitignore : files and folders that Git should NOT save in the repository
+#
+# These are things that get created automatically (by npm or the TypeScript
+# compiler), or that belong only to your own computer. Anyone can recreate
+# them by running the build, so saving them would only add clutter and cause
+# merge conflicts.
+# =============================================================================
+
+# --- npm / Node.js -----------------------------------------------------------
+# Downloaded third-party packages. "npm ci" reinstalls them from package-lock.json.
+node_modules/
+npm-debug.log*
+
+# --- Build output -------------------------------------------------------------
+# Compiled JavaScript made from our TypeScript source code.
+dist/
+build/
+# Test coverage reports.
+coverage/
+
+# --- Secrets and local settings ----------------------------------------------
+# Environment files can hold passwords. Only the example file is shared.
+.env
+.env.*
+!.env.example
+
+# --- Editors and operating systems ------------------------------------------
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# --- Logs ---------------------------------------------------------------------
+*.log

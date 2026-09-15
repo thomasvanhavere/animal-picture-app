@@ -1,0 +1,69 @@
+# =============================================================================
+# default.conf.template : Nginx settings for animal-picture-ui
+#
+# Nginx is a small, fast web server. In this container it does two things:
+#   1. sends the web page files (index.html, JavaScript, CSS) to the browser,
+#   2. passes every request for /api/... on to the animal-picture-api
+#      container (a "reverse proxy"), so the browser only ever talks to one
+#      address and needs no special cross-site settings.
+#
+# This is a TEMPLATE. When the container starts, Nginx replaces ${API_HOST},
+# ${API_PORT} and ${DNS_RESOLVER} with the environment variables of the same
+# name, and writes the result to /etc/nginx/conf.d/default.conf. Nginx's own
+# variables, such as $uri, are left alone because no environment variable
+# has their name.
+# =============================================================================
+server {
+    # The unprivileged Nginx image runs as a normal user, which can't use
+    # ports below 1024, so it listens on 8080 instead of 80.
+    listen 8080;
+    server_name _;
+
+    root /usr/share/nginx/html;
+
+    # Don't show the Nginx version in error pages and headers.
+    server_tokens off;
+
+    # Compress text files before sending them; pictures are compressed already.
+    gzip on;
+    gzip_types text/css application/javascript image/svg+xml;
+
+    # --- The API ---------------------------------------------------------------
+    # Docker gives every container a DNS server at 127.0.0.11 that knows the
+    # other containers by name. Looking the API up there on every request
+    # (instead of once at start-up) keeps the page working when the API
+    # container is recreated and gets a new address.
+    resolver ${DNS_RESOLVER} valid=10s ipv6=off;
+
+    location /api/ {
+        # Using a variable here is what makes Nginx use the resolver above.
+        # The request is passed on unchanged: /api/pictures?count=2 stays
+        # /api/pictures?count=2.
+        set $api_address http://${API_HOST}:${API_PORT};
+        proxy_pass $api_address;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Fetching many pictures can take a while: each download may take up
+        # to DOWNLOAD_TIMEOUT_MS. The default of 60 seconds could cut it off.
+        proxy_read_timeout 300s;
+    }
+
+    # --- The page files --------------------------------------------------------
+    # Vite puts a fingerprint in the names of these files (main-3f9a1c.js),
+    # so a changed file always gets a new name. That makes it safe to let the
+    # browser keep them for a year.
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    # Everything else is the page itself. "no-cache" makes the browser check
+    # for a new version every time, so it picks up new asset names after an update.
+    location / {
+        add_header Cache-Control "no-cache";
+        try_files $uri /index.html;
+    }
+}

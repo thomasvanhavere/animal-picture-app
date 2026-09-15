@@ -1,0 +1,27 @@
+# =============================================================================
+# .gitattributes : how Git should treat line endings
+#
+# Windows ends lines of text with two invisible characters (CRLF), while
+# Mac and Linux use one (LF). Mixing them causes problems: for example, a
+# shell script with Windows line endings fails inside a Linux Docker container.
+# These rules make sure every file gets the right line endings, no matter
+# which computer it was checked out on.
+# =============================================================================
+
+# By default, let Git detect text files and store them with LF line endings.
+* text=auto eol=lf
+
+# Windows-only scripts must keep Windows line endings to run correctly.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Shell scripts must always use LF, because they run on Linux (including in Docker).
+*.sh text eol=lf
+
+# Binary files: never change them.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary

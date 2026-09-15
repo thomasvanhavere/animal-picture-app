@@ -1,0 +1,58 @@
+<!--
+  index.html : the web page
+
+  This is the page's structure. It starts out mostly empty: the TypeScript
+  in src/ fills in the pictures once the page has loaded. Elements the code
+  needs to find have an "id".
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Animal Pictures</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>Animal Pictures</h1>
+      <p class="tagline">Random cats, dogs and bears, fetched and saved on demand.</p>
+    </header>
+
+    <main class="layout">
+      <!-- Fetching new pictures, and showing the ones just fetched. -->
+      <section class="panel" aria-labelledby="fetch-title">
+        <h2 id="fetch-title">Fetch new pictures</h2>
+
+        <form id="fetch-form" class="fetch-form" novalidate>
+          <div class="field">
+            <label for="count-input">How many</label>
+            <input
+              id="count-input"
+              name="count"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              step="1"
+              value="1"
+              autocomplete="off"
+            />
+          </div>
+          <button id="fetch-button" type="submit" class="button">Fetch 1 random picture</button>
+        </form>
+
+        <p id="fetch-status" class="status" role="status" aria-live="polite"></p>
+
+        <div id="fetched-pictures" class="fetched"></div>
+      </section>
+
+      <!-- The most recently saved picture. -->
+      <aside class="panel" aria-labelledby="latest-title">
+        <h2 id="latest-title">Latest saved picture</h2>
+        <div id="latest-picture" class="latest"></div>
+      </aside>
+    </main>
+  </body>
+</html>

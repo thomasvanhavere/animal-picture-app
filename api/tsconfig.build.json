@@ -1,0 +1,15 @@
+{
+  // ==========================================================================
+  // tsconfig.build.json : compiler settings used by "npm run build"
+  //
+  // Same as tsconfig.json, but only compiles the application code in src/.
+  // The tests in test/ are run directly by Vitest and never need to be
+  // compiled to dist/, so they are left out here. This also keeps the
+  // Docker image free of test code.
+  // ==========================================================================
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

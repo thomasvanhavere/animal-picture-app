@@ -1,0 +1,40 @@
+{
+  "//": [
+    "package.json for the animal-picture-ui service.",
+    "",
+    "This is the web page. It is written in TypeScript without a framework,",
+    "built into plain HTML, CSS and JavaScript by Vite, and served by Nginx.",
+    "",
+    "Commands (run from this folder, or from the root with 'npm run <name> --prefix ui'):",
+    "  npm run dev        start the page on http://localhost:5173, reloading on every change",
+    "                     (it passes /api requests on to the API on your machine)",
+    "  npm run build      check the types, then build the page into dist/",
+    "  npm run preview    serve the built page from dist/, to try the build",
+    "  npm test           run the automated tests once",
+    "  npm run typecheck  check the types without building"
+  ],
+  "name": "animal-picture-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web page that shows the latest animal picture and fetches new random ones through the animal-picture-api.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25.0.0",
+    "npm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.4",
+    "jsdom": "30.0.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.0",
+    "vitest": "4.1.11"
+  }
+}

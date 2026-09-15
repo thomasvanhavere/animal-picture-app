@@ -1,0 +1,43 @@
+{
+  // ==========================================================================
+  // tsconfig.json : settings for the TypeScript compiler
+  //
+  // In this service, the TypeScript compiler ("tsc") only CHECKS the types.
+  // Vite turns the TypeScript into JavaScript for the browser, which is why
+  // "noEmit" is on: tsc never writes any files.
+  // ==========================================================================
+  "compilerOptions": {
+    // Modern JavaScript, which every current browser understands.
+    "target": "ES2022",
+
+    // Browser APIs (document, fetch, ...) on top of the JavaScript ones.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+
+    // Let Vite (the "bundler") find the files. Imports can then leave out
+    // the file extension: import { x } from './app'.
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // Check only; Vite does the translating.
+    "noEmit": true,
+
+    // Vite translates each file on its own, without looking at the others.
+    // This makes the compiler warn about the few things that can't work that way.
+    "isolatedModules": true,
+
+    // Turn on every strictness check, like in the API.
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    // Make known: Vite's extras (importing CSS files), the test runner's
+    // "describe"/"it"/"expect", and Node.js (the tests read index.html from disk).
+    "types": ["vite/client", "vitest/globals", "node"]
+  },
+  "include": ["src", "test", "vite.config.ts"]
+}

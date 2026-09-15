@@ -1,0 +1,454 @@
+{
+  "info": {
+    "name": "Animal Picture API",
+    "description": "Every endpoint of the animal-picture-api, ready to try out.\n\nHOW TO USE\n1. Start the app: `docker compose up --build`\n2. In Postman: File > Import, and choose this file.\n3. Open the collection's Variables tab if your API runs on a different port than 3000.\n\nThe requests are grouped in folders. Work through them top to bottom: the 'Fetch and save' folder puts pictures in the database, the 'Latest picture' folder reads them back, and 'Errors' shows what bad input looks like.\n\nEach request has a small automated check in its Tests tab, so the Test Results pane tells you at a glance whether the answer was as expected.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "description": "Where the API is running. Change the port here if you changed API_PORT in .env."
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health",
+            "description": "Is the API up, and can it reach the database?\n\nExpected: 200 {\"status\":\"ok\",\"database\":\"up\"}\nIf the database is down you get 503 instead."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('API and database are up', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.eql({ status: 'ok', database: 'up' });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fetch and save",
+      "description": "These requests download pictures from the internet and save them in the database. Each one answers 201 Created with the details of the saved pictures.",
+      "item": [
+        {
+          "name": "One picture, default animal",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/pictures",
+            "description": "No parameters at all: fetches one picture of the DEFAULT_ANIMAL from .env. With the default setting 'random', you get a random animal."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('one picture was saved', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.count).to.eql(1);",
+                  "  pm.expect(['cat', 'dog', 'bear']).to.include(body.pictures[0].animal);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "One cat",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures?animal=cat",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures"],
+              "query": [{ "key": "animal", "value": "cat", "description": "cat, dog or bear" }]
+            },
+            "description": "Fetches and saves one cat picture."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('a cat was saved', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().pictures[0].animal).to.eql('cat');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Three dogs",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures?animal=dog&count=3",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures"],
+              "query": [
+                { "key": "animal", "value": "dog" },
+                { "key": "count", "value": "3", "description": "1 up to MAX_PICTURES_PER_REQUEST (10 by default)" }
+              ]
+            },
+            "description": "Fetches and saves three dog pictures, one after the other. Takes a few seconds because each picture is downloaded separately."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('three dogs were saved', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.count).to.eql(3);",
+                  "  body.pictures.forEach(p => pm.expect(p.animal).to.eql('dog'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "One bear",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures?animal=bear",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures"],
+              "query": [{ "key": "animal", "value": "bear" }]
+            },
+            "description": "Fetches and saves one bear picture."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('a bear was saved', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().pictures[0].animal).to.eql('bear');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Two random animals",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures?animal=random&count=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures"],
+              "query": [{ "key": "animal", "value": "random" }, { "key": "count", "value": "2" }]
+            },
+            "description": "animal=random: each picture gets its own random animal, picked from ENABLED_ANIMALS, whatever DEFAULT_ANIMAL is."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('two pictures were saved', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().count).to.eql(2);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Latest picture",
+      "description": "Reads back the most recently saved picture, by date/time. Run something from 'Fetch and save' first, or you get 404.",
+      "item": [
+        {
+          "name": "Latest of any animal (as picture)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/pictures/latest",
+            "description": "The newest saved picture, whatever the animal, sent as a file. Postman shows the picture in the Body tab.\n\nThe headers X-Picture-Id and X-Picture-Animal tell you which picture this is."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('a picture came back', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.match(/^image\\//);",
+                  "  pm.expect(pm.response.headers.get('X-Picture-Id')).to.match(/^\\d+$/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Latest of any animal (as JSON details)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/pictures/latest/details",
+            "description": "The same picture as above, but its details as JSON instead of the file: id, animal, provider, source URL, content type, size, date/time saved, and the URL to fetch the file."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('details came back', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.all.keys('id', 'animal', 'provider', 'sourceUrl', 'contentType', 'sizeBytes', 'createdAt', 'url');",
+                  "  // Remember the id, so the 'One picture by id' request can use it.",
+                  "  pm.collectionVariables.set('lastPictureId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Latest cat (as picture)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures/latest?animal=cat",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures", "latest"],
+              "query": [{ "key": "animal", "value": "cat", "description": "filter: cat, dog or bear" }]
+            },
+            "description": "Filtered by animal: the newest cat picture, as a file."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('a cat picture came back', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('X-Picture-Animal')).to.eql('cat');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Latest dog (as picture)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures/latest?animal=dog",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures", "latest"],
+              "query": [{ "key": "animal", "value": "dog" }]
+            },
+            "description": "Filtered by animal: the newest dog picture, as a file."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('a dog picture came back', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('X-Picture-Animal')).to.eql('dog');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Latest bear (as JSON details)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures/latest/details?animal=bear",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures", "latest", "details"],
+              "query": [{ "key": "animal", "value": "bear" }]
+            },
+            "description": "Filtered by animal: the newest bear picture, as JSON details."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('bear details came back', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().animal).to.eql('bear');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "One picture by id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/pictures/{{lastPictureId}}",
+            "description": "One specific picture, as a file. The id is filled in automatically after you run 'Latest of any animal (as JSON details)'. You can also type a number by hand, for example /api/pictures/1."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('the picture came back', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.match(/^image\\//);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Errors",
+      "description": "What the API answers when the input is wrong. Every error has the same shape: { \"error\": \"...\", \"message\": \"...\" }.",
+      "item": [
+        {
+          "name": "Unknown animal (400)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures?animal=fox",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures"],
+              "query": [{ "key": "animal", "value": "fox" }]
+            },
+            "description": "'fox' is not one of cat, dog, bear."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 with a clear message', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().message).to.include('not a known animal');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Count too high (400)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures?animal=cat&count=99",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures"],
+              "query": [
+                { "key": "animal", "value": "cat" },
+                { "key": "count", "value": "99" }
+              ]
+            },
+            "description": "More than MAX_PICTURES_PER_REQUEST."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 with a clear message', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().message).to.include('count must be between');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Count not a number (400)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/pictures?count=two",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pictures"],
+              "query": [{ "key": "count", "value": "two" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Picture id that does not exist (404)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/pictures/999999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404 with a clear message', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json().message).to.eql('There is no picture with id 999999.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Address that does not exist (404)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/nothing-here"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404 in the standard error shape', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json()).to.have.all.keys('error', 'message');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

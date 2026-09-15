@@ -1,0 +1,28 @@
+# =============================================================================
+# .editorconfig : shared formatting rules for code editors
+#
+# Most editors (VS Code, IntelliJ, and others) read this file automatically.
+# It keeps basic formatting, such as indentation and line endings, the same
+# for everyone who works on the project.
+# See https://editorconfig.org for details.
+# =============================================================================
+
+# This is the top-level settings file; editors don't need to look further up.
+root = true
+
+# Rules for every file.
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Windows scripts need Windows line endings.
+[*.{cmd,bat,ps1}]
+end_of_line = crlf
+
+# In Markdown, two spaces at the end of a line create a line break, so keep them.
+[*.md]
+trim_trailing_whitespace = false

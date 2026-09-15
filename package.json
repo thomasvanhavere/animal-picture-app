@@ -1,0 +1,42 @@
+{
+  "//": [
+    "Root package.json for the whole animal-picture-app project.",
+    "",
+    "The project is made of separate services (api, ui), and each one has its",
+    "own package.json and package-lock.json in its own folder. That way every",
+    "service can be installed, built and put in a Docker container on its own.",
+    "",
+    "This root file does not contain application code. It only:",
+    "  - describes the project,",
+    "  - states which Node.js and npm versions are required ('engines'),",
+    "  - holds shortcut commands ('scripts') that run a command in every",
+    "    service at once. '--prefix api' means 'run this inside the api folder'.",
+    "",
+    "Shortcuts:",
+    "  npm run install:all   install the packages of every service",
+    "  npm run build         compile every service",
+    "  npm test              run the unit tests of every service",
+    "  npm run test:integration  run the integration tests of every service (needs Docker)",
+    "  npm run dev:api       run the API on your machine, restarting on code changes",
+    "  npm run dev:ui        run the web page on your machine, reloading on code changes",
+    "",
+    "See the 'Building' section in README.md for how to use it."
+  ],
+  "name": "animal-picture-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservice application that downloads random animal pictures (cats, dogs, bears), stores them in a database and shows them in a simple web page.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24.0.0 <25.0.0",
+    "npm": ">=11.0.0"
+  },
+  "scripts": {
+    "install:all": "npm ci --prefix api && npm ci --prefix ui",
+    "build": "npm run build --prefix api && npm run build --prefix ui",
+    "test": "npm test --prefix api && npm test --prefix ui",
+    "test:integration": "npm run test:integration --prefix api",
+    "dev:api": "npm run dev --prefix api",
+    "dev:ui": "npm run dev --prefix ui"
+  }
+}

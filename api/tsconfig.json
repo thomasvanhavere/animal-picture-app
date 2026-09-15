@@ -1,0 +1,63 @@
+{
+  // ==========================================================================
+  // tsconfig.json : settings for the TypeScript compiler
+  //
+  // TypeScript is a version of JavaScript with types. The compiler ("tsc")
+  // checks that the types add up and then turns the code into plain
+  // JavaScript that Node.js can run. This file tells it how strict to be and
+  // which flavour of JavaScript to produce.
+  //
+  // This file is used for type checking and by the editor. The build uses
+  // tsconfig.build.json, which adds a few build-only settings on top.
+  // ==========================================================================
+  "compilerOptions": {
+    // Produce modern JavaScript. Node.js 24 understands all of it, so
+    // nothing needs to be rewritten into older syntax.
+    "target": "ES2022",
+
+    // Use the modern "import/export" module system, the way Node.js expects
+    // it for a package with "type": "module".
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // Turn on every strictness check. This catches many bugs at compile time,
+    // for example using a value that might be undefined.
+    "strict": true,
+
+    // Also complain about things that are technically allowed but usually
+    // mistakes: unused variables, missing "return" statements, and reading
+    // array elements without checking they exist.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // TypeORM describes database tables with "decorators" (the @Entity and
+    // @Column annotations you see in the entity file). These two settings
+    // turn them on and let TypeORM read the type of each column.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // Allow "import x from 'package'" for older packages that use the
+    // CommonJS module style.
+    "esModuleInterop": true,
+
+    // Treat file names as case-sensitive, so code that works on Windows
+    // (case-insensitive) also works inside a Linux Docker container.
+    "forceConsistentCasingInFileNames": true,
+
+    // Don't type-check the third-party packages in node_modules. Their
+    // authors already did that, and it makes the build faster.
+    "skipLibCheck": true,
+
+    // Make the test runner's "describe", "it" and "expect" known to the
+    // compiler, so the test files type-check without importing them.
+    "types": ["node", "vitest/globals"],
+
+    // Where the compiled JavaScript goes, and where the source is.
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["src", "test"]
+}
