@@ -14,6 +14,95 @@ containers**.
 
 ---
 
+## TL;DR: run it
+
+First get the code (skip if you already have the folder):
+
+```powershell
+git clone https://github.com/thomasvanhavere/animal-picture-app.git
+cd animal-picture-app
+```
+
+No settings file is needed: the defaults in `.env.defaults` are used.
+
+### Option A: with Docker (easiest)
+
+**You need:** Docker Desktop (running) and Git.
+
+1. Start the app (the first time takes a few minutes):
+   ```powershell
+   docker compose up -d --build
+   ```
+2. Check that all three containers say `healthy`:
+   ```powershell
+   docker compose ps
+   ```
+3. Open the web page at **http://localhost:8080**. The API is at
+   http://localhost:3000/health, which should show `{"status":"ok","database":"up"}`.
+4. Stop it with `docker compose down`. Your saved pictures are kept.
+
+### Option B: with npm (reloads when you change code)
+
+**You need:** Node.js 24 (`node -v` must start with `v24`), Git, and a
+PostgreSQL database. The easiest way to get the database is Docker, used for the
+database only.
+
+1. Install the packages:
+   ```powershell
+   npm run install:all
+   ```
+2. Start only the database. If you used Option A before, first run
+   `docker compose stop animal-picture-api animal-picture-ui`, because they use
+   the same ports.
+   ```powershell
+   docker compose up -d animal-picture-database
+   ```
+3. Start the API in terminal 1, and wait for
+   `animal-picture-api is listening on port 3000.`:
+   ```powershell
+   npm run dev:api
+   ```
+4. Start the web page in a **second** terminal:
+   ```powershell
+   npm run dev:ui
+   ```
+5. Open the web page at **http://localhost:5173** (a different port from
+   Docker). The API is at http://localhost:3000/health.
+6. Stop with **Ctrl+C** in both terminals, then
+   `docker compose stop animal-picture-database`.
+
+**No Docker at all?** Install [PostgreSQL](https://www.postgresql.org/download/),
+create the database and user once, and skip step 2. The default settings
+already point to `localhost:5432` with this name, user and password.
+
+```powershell
+psql -U postgres -c "CREATE USER animal_picture_user WITH PASSWORD 'animal_picture_password';"
+psql -U postgres -c "CREATE DATABASE animal_picture_database OWNER animal_picture_user;"
+```
+
+### Run the tests
+
+After `npm run install:all`, from the project folder:
+
+| Command | What it tests | Needs |
+|---|---|---|
+| `npm test` | Unit tests of the API and the web page | Nothing else |
+| `npm run test:integration` | The API against a real database | Docker Desktop running |
+
+### Something not working?
+
+| Problem | Fix |
+|---|---|
+| `port is already allocated` or `EADDRINUSE` | Something else uses port 3000, 8080 or 5432. Stop it, or change `API_PORT`, `UI_PORT` or `DATABASE_PORT` in a `.env` file. |
+| `npm` refuses to install ("engine" error) | You're not on Node.js 24. Install it, or run `nvm use`. |
+| The page says the API is not available | Check the API is running: `docker compose ps` (Option A) or terminal 1 (Option B). |
+| `Configuration error: … is not set` | A setting in your `.env` is empty or misspelled. Fix it, or delete `.env` to use the defaults. |
+| `docker` command not found or cannot connect | Start Docker Desktop and wait until it's running. |
+
+The rest of this README explains everything in more detail.
+
+---
+
 ## Table of contents
 
 1. [What does it do?](#what-does-it-do)
