@@ -26,7 +26,7 @@ export class PictureController {
    * animal may also be "random".
    */
   fetchAndSave = async (req: Request, res: Response): Promise<void> => {
-    const animal = readAnimalParam(req, { allowRandom: true });
+    const animal = readAnimalParam(req);
     const count = readCountParam(req);
 
     const pictures = await this.service.fetchAndSave(animal, count);
@@ -39,21 +39,19 @@ export class PictureController {
   };
 
   /**
-   * GET /api/pictures/latest?animal=cat
-   * Sends the newest saved picture as a file.
+   * GET /api/pictures/latest
+   * Sends the newest saved picture, of any animal, as a file.
    */
-  getLatest = async (req: Request, res: Response): Promise<void> => {
-    const picture = await this.service.getLatest(readAnimalParam(req));
-    sendPictureFile(res, picture);
+  getLatest = async (_req: Request, res: Response): Promise<void> => {
+    sendPictureFile(res, await this.service.getLatest());
   };
 
   /**
-   * GET /api/pictures/latest/details?animal=cat
+   * GET /api/pictures/latest/details
    * Sends the newest saved picture's details as JSON, without the file.
    */
-  getLatestDetails = async (req: Request, res: Response): Promise<void> => {
-    const details = await this.service.getLatestDetails(readAnimalParam(req));
-    res.json(toJson(details));
+  getLatestDetails = async (_req: Request, res: Response): Promise<void> => {
+    res.json(toJson(await this.service.getLatestDetails()));
   };
 
   /**
@@ -85,25 +83,20 @@ function readQueryParam(req: Request, name: string): string | undefined {
   return typeof first === 'string' && first.trim() !== '' ? first.trim() : undefined;
 }
 
-/**
- * Reads ?animal=..., which must be a known animal if present. With
- * allowRandom, "random" is accepted too (only fetching new pictures allows it;
- * "the latest random picture" means nothing).
- */
-function readAnimalParam(req: Request): Animal | undefined;
-function readAnimalParam(req: Request, options: { allowRandom: true }): Animal | typeof RANDOM_ANIMAL | undefined;
-function readAnimalParam(req: Request, { allowRandom = false } = {}): Animal | typeof RANDOM_ANIMAL | undefined {
+/** Reads ?animal=..., which must be a known animal or "random" if present. */
+function readAnimalParam(req: Request): Animal | typeof RANDOM_ANIMAL | undefined {
   const raw = readQueryParam(req, 'animal');
   if (raw === undefined) {
     return undefined;
   }
   const animal = raw.toLowerCase();
-  if (allowRandom && animal === RANDOM_ANIMAL) {
+  if (animal === RANDOM_ANIMAL) {
     return RANDOM_ANIMAL;
   }
   if (!isAnimal(animal)) {
-    const choices = allowRandom ? [...ALL_ANIMALS, RANDOM_ANIMAL] : ALL_ANIMALS;
-    throw new BadRequestError(`"${raw}" is not a known animal. Choose one of: ${choices.join(', ')}.`);
+    throw new BadRequestError(
+      `"${raw}" is not a known animal. Choose one of: ${[...ALL_ANIMALS, RANDOM_ANIMAL].join(', ')}.`,
+    );
   }
   return animal;
 }
@@ -130,9 +123,6 @@ function sendPictureFile(res: Response, picture: AnimalPicture): void {
     .status(200)
     .type(picture.contentType)
     .setHeader('Content-Length', picture.sizeBytes)
-    // Extra headers so a caller can learn about the picture without a second request.
-    .setHeader('X-Picture-Id', String(picture.id))
-    .setHeader('X-Picture-Animal', picture.animal)
     .send(picture.imageData);
 }
 

@@ -20,10 +20,10 @@ build/
 coverage/
 
 # --- Secrets and local settings ----------------------------------------------
-# Environment files can hold passwords. Only the example file is shared.
+# Environment files can hold passwords. Only the file with the defaults is shared.
 .env
 .env.*
-!.env.example
+!.env.defaults
 
 # --- Editors and operating systems ------------------------------------------
 .idea/

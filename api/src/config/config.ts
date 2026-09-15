@@ -2,7 +2,7 @@
  * config.ts : reads and checks all settings
  *
  * All settings come from environment variables, which are described in
- * .env.example at the root of the project. This file reads them once when
+ * .env.defaults at the root of the project. This file reads them once when
  * the app starts, checks that every value makes sense, and turns them into
  * one typed "Config" object that the rest of the app uses.
  *
@@ -49,7 +49,7 @@ export interface Config {
   enabledAnimals: Animal[];
   /** Animal used when a request doesn't pick one, or "random". */
   defaultAnimal: Animal | typeof RANDOM_ANIMAL;
-  /** How many random pixels may be added to a picture size (see .env.example). */
+  /** How many random pixels may be added to a picture size (see .env.defaults). */
   pictureSizeVariation: number;
   /** The most pictures one request may fetch. */
   maxPicturesPerRequest: number;
@@ -189,7 +189,7 @@ function readAnimalConfig(env: Env, animal: Animal): AnimalConfig {
 function readText(env: Env, name: string): string {
   const value = env[name]?.trim();
   if (!value) {
-    throw new ConfigError(`${name} is not set. See .env.example for a description.`);
+    throw new ConfigError(`${name} is not set. See .env.defaults for a description.`);
   }
   return value;
 }
@@ -209,7 +209,7 @@ function readInteger(
     if (options.fallback !== undefined) {
       return options.fallback;
     }
-    throw new ConfigError(`${name} is not set. See .env.example for a description.`);
+    throw new ConfigError(`${name} is not set. See .env.defaults for a description.`);
   }
 
   // Number() accepts things like "1e3" or " 12 ", so we check the text is

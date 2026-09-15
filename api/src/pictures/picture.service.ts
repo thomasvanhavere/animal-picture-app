@@ -70,30 +70,22 @@ export class PictureService {
   }
 
   /**
-   * Returns the most recently saved picture, with its file contents.
-   *
-   * @param animal  Limit to one animal, or undefined for the newest of any animal.
-   * @throws NotFoundError if no matching picture has been saved yet.
+   * Returns the most recently saved picture, of any animal, with its file contents.
+   * @throws NotFoundError if nothing has been saved yet.
    */
-  async getLatest(animal?: Animal): Promise<AnimalPicture> {
-    if (animal !== undefined) {
-      this.assertEnabled(animal);
-    }
-    const picture = await this.repository.findLatest(animal);
+  async getLatest(): Promise<AnimalPicture> {
+    const picture = await this.repository.findLatest();
     if (!picture) {
-      throw new NotFoundError(noPictureMessage(animal));
+      throw new NotFoundError(NO_PICTURE_MESSAGE);
     }
     return picture;
   }
 
   /** Like getLatest, but without the file contents. */
-  async getLatestDetails(animal?: Animal): Promise<AnimalPictureDetails> {
-    if (animal !== undefined) {
-      this.assertEnabled(animal);
-    }
-    const details = await this.repository.findLatestDetails(animal);
+  async getLatestDetails(): Promise<AnimalPictureDetails> {
+    const details = await this.repository.findLatestDetails();
     if (!details) {
-      throw new NotFoundError(noPictureMessage(animal));
+      throw new NotFoundError(NO_PICTURE_MESSAGE);
     }
     return details;
   }
@@ -133,6 +125,4 @@ function withoutImageData(picture: AnimalPicture): AnimalPictureDetails {
   return details;
 }
 
-function noPictureMessage(animal?: Animal): string {
-  return animal ? `No ${animal} picture has been saved yet.` : 'No picture has been saved yet.';
-}
+const NO_PICTURE_MESSAGE = 'No picture has been saved yet.';

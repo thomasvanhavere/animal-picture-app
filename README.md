@@ -7,8 +7,10 @@ simple web page**.
 It's written in **TypeScript**, built with **npm**, and runs in **Docker
 containers**.
 
-> **Status:** work in progress. See the [Roadmap](#roadmap) for what's already
-> built and what's next.
+> **Status:** all planned steps are done: the API, the database, the web page
+> and the automated tests. See the [Roadmap](#roadmap) for ideas for later.
+>
+> **Source code:** https://github.com/thomasvanhavere/animal-picture-app
 
 ---
 
@@ -23,8 +25,7 @@ containers**.
 7. [The web page](#the-web-page)
 8. [The API](#the-api)
 9. [Building and testing](#building-and-testing)
-10. [How the code is documented](#how-the-code-is-documented)
-11. [Roadmap](#roadmap)
+
 
 ---
 
@@ -32,16 +33,41 @@ containers**.
 
 1. **Fetch new pictures.** The app asks a free public picture service for a
    random picture of a cat, dog or bear, downloads it, and saves it in the
-   database. You can say which animal you want and how many pictures (one,
-   if you don't say). Which service to use and what size the pictures are
+   database. You can say which animal you want (or a random one) and how
+   many pictures (one, if you don't say). A request saves all its pictures or
+   none. Which service to use and what size the pictures are
    is set with environment variables.
-2. **Show the latest picture.** You can ask for the most recently saved
-   picture, either of one kind of animal or of any animal.
-3. **A web page.** At http://localhost:8080 you see the latest saved picture,
-   and you can fetch as many pictures as you like, of a cat, a dog, a bear or
-   a random animal. Several pictures are shown in a carousel.
-4. **More to come.** The design leaves room for new features, such as running
-   the picture fetch as a step in a Camunda process.
+2. **Keep them in a database.** Every picture is stored in a PostgreSQL
+   database, in one table called `animal_pictures`. The picture file itself
+   is saved there too, not just a link to it, so a saved picture stays
+   available even if the picture service goes offline or changes its
+   pictures. Next to the file, each row records:
+
+   | Column | What it holds | Example |
+   |---|---|---|
+   | `id` | A number that identifies the picture, handed out in order | `27` |
+   | `animal` | Which animal is in the picture | `cat` |
+   | `provider` | Which picture service it came from | `cataas` |
+   | `source_url` | The exact address it was downloaded from | `https://cataas.com/cat?width=506` |
+   | `content_type` | The kind of file | `image/jpeg` |
+   | `size_bytes` | The size of the file | `34236` |
+   | `image_data` | The picture file itself | *(binary data)* |
+   | `created_at` | When it was saved | `2026-09-15 09:27:34+00` |
+
+   The database runs in its own container and keeps its data in a Docker
+   volume, so the pictures survive restarts and rebuilds. The API creates the
+   table by itself the first time it starts. See
+   [Looking inside the database](#looking-inside-the-database) to query it.
+3. **Hand them out through a REST API.** The API, at
+   **http://localhost:3000** once the app is running, fetches new pictures,
+   sends back the latest one, and sends any saved picture by its id. Every
+   request is described in [The API](#the-api), and there is a ready-made
+   [Postman collection](#try-it-out-with-postman) to try them.
+4. **Show them in a web page.** At **http://localhost:8080** you see the latest
+   saved picture, and you can fetch as many pictures as you like, of a cat, a
+   dog, a bear or a random animal. Several pictures are shown in a carousel.
+   See [The web page](#the-web-page).
+
 
 ---
 
@@ -71,7 +97,7 @@ its own container and has one clear job.
 
 | Service | Job | Built with |
 |---|---|---|
-| **animal-picture-ui** | Shows the web page. Passes every `/api/...` request on to the API, so the browser only ever talks to one address. | TypeScript, Nginx |
+| **animal-picture-ui** | Shows the web page. Passes every `/api/...` request on to the API, so the browser only ever talks to one address. | TypeScript, Vite, Nginx |
 | **animal-picture-api** | Fetches pictures from the internet, saves them, and hands them back out. Knows nothing about the web page. | TypeScript, Node.js, Express, TypeORM |
 | **animal-picture-database** | Keeps the saved pictures, even after a restart. | PostgreSQL |
 
@@ -82,8 +108,10 @@ its own container and has one clear job.
   worker) in exactly the same way the web page uses it.
 - **Express.** A small, widely known web framework. We give it a clear
   structure of our own: *routes → controllers → services → repositories*.
-- **TypeORM.** Maps database tables to TypeScript classes. It works much like
-  JPA/Hibernate in Java, so Java developers will recognise it right away.
+- **TypeORM.** Maps database tables to TypeScript classes.
+- **A web page without a framework.** The page is small: one form, a
+  carousel and a picture. Plain TypeScript keeps it light (about 7 KB) and
+  easy to follow. Vite turns it into ordinary files, and Nginx serves them.
 - **PostgreSQL in its own container.** Runs locally, needs no cloud account,
   and keeps its data in a Docker volume.
 - **npm.** The standard build tool for TypeScript. Each service has its own
@@ -95,7 +123,7 @@ its own container and has one clear job.
 
 ```
 animal-picture-app/
-├── .env.example         All settings, with explanations (copy to .env to use)
+├── .env.defaults        All settings with their default values and explanations
 ├── docker-compose.yml   Starts all services together
 ├── package.json         Project description, required Node.js version, shortcut commands
 ├── .npmrc               npm settings: enforce the Node.js version, save exact versions
@@ -120,12 +148,15 @@ animal-picture-app/
 │   │   └── errors/               Error types and the central error handler
 │   └── test/                     Unit tests, one file per piece
 │       └── integration/          Tests against a real database and the whole running API
+│           └── helpers/          The test database connection and a fake picture service
 │
 └── ui/                  The web page service
     ├── package.json     Its own packages and commands
     ├── Dockerfile       How to build its container image (the page, served by Nginx)
     ├── nginx/           Nginx settings: serve the page, pass /api on to the API
+    ├── vite.config.ts   Build and test settings; passes /api on to the API in development
     ├── index.html       The page's structure
+    ├── public/          Files served as they are (the page icon)
     ├── src/
     │   ├── main.ts               Starting point: starts the page with the real API
     │   ├── app.ts                The page's behaviour: latest picture, fetch button, results
@@ -148,9 +179,6 @@ repository   reads and writes the database                       picture.reposit
 downloader   fetches a picture from the internet                 picture-downloader.ts
 ```
 
-The service is the only layer with rules in it, and it has no idea it's
-reached over HTTP. That makes it easy to reuse from somewhere else later, for
-example from a Camunda job worker.
 
 ### Why does each service have its own `package.json`?
 
@@ -166,42 +194,54 @@ anything.
 | Tool | Needed for | Version |
 |---|---|---|
 | **Node.js** (includes npm) | Building and running the code on your machine | **24 LTS** |
-| **Docker Desktop** | Running the whole app with its database | recent version |
+| **Docker Desktop** | Running the whole app, and the API's integration tests | recent version |
 | **Git** | Version control | any recent version |
 
 The project checks your Node.js version: npm refuses to install if you use a
 version other than 24. If you use a Node version manager such as `nvm` or
 `fnm`, running `nvm use` (or `fnm use`) picks the right version from `.nvmrc`.
 
+Node.js is only needed to work on the code. To just run the app, Docker
+Desktop and Git are enough.
+
+### Getting the code
+
+```sh
+git clone https://github.com/thomasvanhavere/animal-picture-app.git
+cd animal-picture-app
+```
+
 ---
 
 ## Configuration
 
-All settings live in one environment file. To get started, copy the example:
+The app works out of the box: every setting has a default in
+`.env.defaults`, which Docker Compose and `npm run dev:api` read automatically.
+Every setting is explained in that file.
 
-```powershell
-# Windows
-Copy-Item .env.example .env
-```
+To change a setting, don't edit `.env.defaults`. Create a file called `.env`
+next to it and put only the settings you want to change in it:
 
 ```sh
-# Mac / Linux
-cp .env.example .env
+# .env
+UI_PORT=8081
+DEFAULT_ANIMAL=dog
 ```
 
-Then change `.env` as you like. It's ignored by Git, so personal settings and
-passwords stay on your machine. Every setting is explained inside
-`.env.example`.
+A setting in `.env` wins over its default. `.env` is ignored by Git, so
+personal settings and passwords stay on your machine. After changing it,
+restart with `docker compose up -d`.
 
 ### Picture services
 
-Each animal can choose from a list of picture services. You select one with
-`<ANIMAL>_PROVIDER`, and each service's web address is set with
-`<ANIMAL>_PROVIDER_<NAME>_URL`.
+Each animal gets its pictures from a picture service. You select it with
+`<ANIMAL>_PROVIDER`, and its web address is set with
+`<ANIMAL>_PROVIDER_<NAME>_URL`. Right now there is one service per animal; the
+list of allowed services is in `api/src/config/animals.ts`.
 
 | Animal | Setting | Allowed values | Default | Service |
 |---|---|---|---|---|
-| Cat | `CAT_PROVIDER` | `cataas`, `placecats`, `placekitten` | `cataas` | [Cataas](https://cataas.com/), [PlaceCats](https://placecats.com/), [PlaceKitten](https://placekitten.com/) (offline on 2026-09-14) |
+| Cat | `CAT_PROVIDER` | `cataas` | `cataas` | [Cataas](https://cataas.com/) |
 | Dog | `DOG_PROVIDER` | `placedog` | `placedog` | [Place.dog](https://place.dog/) |
 | Bear | `BEAR_PROVIDER` | `placebear` | `placebear` | [PlaceBear](https://placebear.com/) |
 
@@ -221,7 +261,7 @@ A service's address only needs the placeholders it uses. Cataas, for example,
 only gets `{width}`: if it's also given a height, it stretches the picture to
 fit.
 
-Some services (PlaceBear, PlaceCats) pick their picture based on the size, so
+Some services (such as PlaceBear) pick their picture based on the size, so
 the same size always gives the same picture. `PICTURE_SIZE_VARIATION` adds up
 to that many random pixels to the width and height, so you get a different
 animal each time. Set it to `0` for exact sizes.
@@ -233,10 +273,11 @@ animal each time. Set it to `0` for exact sizes.
 | `ENABLED_ANIMALS` | Which animals can be fetched (comma-separated) | `cat,dog,bear` |
 | `DEFAULT_ANIMAL` | Animal used when a request doesn't pick one (`cat`, `dog`, `bear` or `random`) | `random` |
 | `PICTURE_SIZE_VARIATION` | How many random pixels may be added to a picture's width and height | `50` |
+| `UI_PORT` | The port the web page is opened on, on your machine | `8080` |
 | `API_PORT` | The port the API listens on | `3000` |
 | `MAX_PICTURES_PER_REQUEST` | The most pictures one request may fetch | `10` |
 | `DOWNLOAD_TIMEOUT_MS` | How long to wait for a picture service, in milliseconds | `10000` |
-| `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` | Where the database is and how to log in | see `.env.example` |
+| `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD` | Where the database is and how to log in | see `.env.defaults` |
 
 When the API starts, it checks every setting. If a value is misspelled or
 missing, it stops right away and says which setting is wrong.
@@ -245,15 +286,16 @@ missing, it stops right away and says which setting is wrong.
 
 More free picture services are listed at
 [public-apis](https://github.com/public-apis/public-apis) under *Animals*. The
-bottom of `.env.example` explains step by step how to add a new service or a
+bottom of `.env.defaults` explains step by step how to add a new service or a
 new animal.
 
 ---
 
 ## Running
 
-You need Docker Desktop running and a `.env` file (see
-[Configuration](#configuration)). Then, from the project folder:
+You need Docker Desktop running. No settings file is needed: the defaults
+are used unless you add a `.env` (see [Configuration](#configuration)).
+From the project folder:
 
 ```sh
 docker compose up --build
@@ -268,6 +310,9 @@ animal-picture-api  | Applied 1 database migration(s).
 animal-picture-api  | animal-picture-api is listening on port 3000.
 ```
 
+On later starts the table already exists, and the API says
+`Database is up to date.` instead.
+
 Once the API is healthy, the web page starts. Open **http://localhost:8080**
 in your browser. To check the API on its own, open
 http://localhost:3000/health; you should see `{"status":"ok","database":"up"}`.
@@ -276,6 +321,7 @@ http://localhost:3000/health; you should see `{"status":"ok","database":"up"}`.
 |---|---|
 | `docker compose up --build` | Start everything, rebuilding the images first |
 | `docker compose up -d` | Start everything in the background |
+| `docker compose up -d --build` | Rebuild and restart after changing the code; the saved pictures are kept |
 | `docker compose logs -f animal-picture-api` | Watch the API's log (or `animal-picture-ui` for the web page's) |
 | `docker compose down` | Stop everything; the saved pictures are kept |
 | `docker compose down -v` | Stop everything **and delete** the saved pictures |
@@ -283,7 +329,8 @@ http://localhost:3000/health; you should see `{"status":"ok","database":"up"}`.
 ### Looking inside the database
 
 The database is reachable from your machine on port 5432 (user, password and
-database name as in your `.env`). To run a quick query without any tools:
+database name as in `.env.defaults`, unless you changed them in `.env`). To
+run a quick query without any tools:
 
 ```sh
 docker exec animal-picture-database psql -U animal_picture_user -d animal_picture_database \
@@ -301,8 +348,8 @@ npm run install:all
 npm run dev:api
 ```
 
-This works because `.env` says `DATABASE_HOST=localhost`, and the database
-container exposes its port on your machine.
+This works because the default `DATABASE_HOST` is `localhost`, and the
+database container exposes its port on your machine.
 
 ### Running the web page outside Docker (for development)
 
@@ -331,6 +378,9 @@ The page at http://localhost:8080 has two parts.
 - **How many** is a number box that starts at 1. It only accepts whole
   numbers: keys like `-`, `e` or `.` do nothing, pasted text is cleaned up
   (`-5` becomes `5`), and an empty box or `0` goes back to 1 when you leave it.
+  A note underneath ("Max. 10 pictures") says how many can be fetched at once, the
+  default `MAX_PICTURES_PER_REQUEST`. If you change that setting, change the
+  note in `ui/index.html` too.
 - **Fetch** asks the API for that many pictures of the chosen animal. The
   button says what it will do, for example "Fetch 3 dog pictures". While
   fetching, the button and the choices are disabled.
@@ -354,7 +404,7 @@ The API lives at `http://localhost:3000`. Every answer is JSON, except the
 ones that return a picture file. Errors always look like this:
 
 ```json
-{ "error": "Bad Request", "message": "\"fox\" is not a known animal. Choose one of: cat, dog, bear." }
+{ "error": "Bad Request", "message": "\"fox\" is not a known animal. Choose one of: cat, dog, bear, random." }
 ```
 
 ### Fetch and save new pictures
@@ -400,15 +450,14 @@ downloaded or saved, the answer is an error and nothing is added.
 ### Get the latest saved picture
 
 ```
-GET /api/pictures/latest?animal=<cat|dog|bear>
+GET /api/pictures/latest
 ```
 
-Sends the newest saved picture **as a file**, so a browser shows it directly.
-Leave `animal` out for the newest picture of any animal. Two extra headers,
-`X-Picture-Id` and `X-Picture-Animal`, say which picture you got.
+Sends the newest saved picture, of any animal, **as a file**, so a browser
+shows it directly.
 
 ```
-GET /api/pictures/latest/details?animal=<cat|dog|bear>
+GET /api/pictures/latest/details
 ```
 
 The same picture, but as JSON details (the same shape as above) instead of
@@ -422,7 +471,15 @@ Both answer `404` if nothing has been saved yet.
 GET /api/pictures/<id>
 ```
 
-Sends the picture with that id as a file. `404` if there is none.
+Sends the picture with that id as a file. `400` if the id isn't a whole
+number, `404` if there is no picture with that id. Every picture's details
+contain this address as `url`.
+
+### Addresses that don't exist, and unexpected errors
+
+Any other address answers `404` in the same JSON shape. If something goes
+wrong inside the API (a bug, the database failing mid-request), the answer is
+`500` with a general message; the details are only written to the API's log.
 
 ### Health check
 
@@ -438,11 +495,15 @@ reached. Docker uses this to decide whether the container is healthy.
 
 A ready-made collection with every request is in
 `api/postman/animal-picture-api.postman_collection.json`. In Postman, choose
-**File → Import** and pick that file. The requests are grouped in folders
-(Health, Fetch and save, Latest picture, Errors), each has a description,
-and each has a small check in its **Tests** tab so you can see at a glance
-whether the answer was as expected. Use **Run collection** to run all 17 in
-one go.
+**File → Import** and pick that file. The 16 requests are grouped in folders
+(Health, Fetch and save, Latest picture, One picture by id, Errors). Each has
+a description, and a small check in its **Tests** tab that shows at a glance
+whether the answer was as expected.
+
+Use **Run collection** to run them all in one go. The "Fetch and save"
+requests run first and remember the id of the picture they saved last, so
+"One picture by id" always has a picture to find. They download real
+pictures and save them in your database.
 
 If your API isn't on port 3000, change the `baseUrl` variable in the
 collection's **Variables** tab.
@@ -451,7 +512,8 @@ collection's **Variables** tab.
 
 Open these one after the other:
 
-1. http://localhost:3000/api/pictures/latest — `404`, nothing saved yet.
+1. http://localhost:3000/api/pictures/latest — the newest picture, or `404`
+   if nothing has been saved yet.
 2. Fetch a picture. Browsers can't send `POST` from the address bar, so use
    the command line:
    ```powershell
@@ -462,7 +524,7 @@ Open these one after the other:
    # Mac / Linux
    curl -X POST "http://localhost:3000/api/pictures?animal=dog&count=3"
    ```
-3. http://localhost:3000/api/pictures/latest?animal=dog — the newest dog.
+3. http://localhost:3000/api/pictures/latest — the newest picture (a dog).
 4. http://localhost:3000/api/pictures/latest/details — its details as JSON.
 
 ---
@@ -475,7 +537,7 @@ commands are for working on the code. Run them from the project root:
 | Command | What it does |
 |---|---|
 | `npm run install:all` | Install the packages of every service |
-| `npm run build` | Compile the TypeScript of every service to JavaScript |
+| `npm run build` | Build every service: the API into `api/dist/`, the web page into `ui/dist/` |
 | `npm test` | Run the unit tests of every service |
 | `npm run test:integration` | Run the integration tests of every service (needs Docker) |
 | `npm run dev:api` | Run the API on your machine, restarting on every change |
@@ -489,14 +551,14 @@ without producing files.
 The API has two kinds of automated tests, and the web page has its own.
 
 **Unit tests** (`npm test`) live in `api/test/`, one file per piece of the
-code. They need no database and no internet: the pieces around the code under
+code. They need no database and no internet: the piece s around the code under
 test are replaced by small fakes, so the tests run in well under a second.
 
 | File | What it checks |
 |---|---|
 | `config.test.ts` | Settings are read correctly, and every wrong value gets a clear message |
 | `picture-downloader.test.ts` | Addresses are built correctly and bad answers from a picture service are reported |
-| `picture.service.test.ts` | The rules: default animal, counts, latest picture, errors |
+| `picture.service.test.ts` | The rules: default and random animal, counts, saving all or nothing, latest picture, errors |
 | `app.test.ts` | The HTTP layer: parameters, status codes, headers, JSON shapes and error answers |
 
 **Integration tests** (`npm run test:integration`) live in
@@ -510,8 +572,8 @@ image; after that the tests take a few seconds.
 | File | What it checks |
 |---|---|
 | `migrations.test.ts` | The migration creates the right columns and index, matches the entity, and can be undone |
-| `picture.repository.test.ts` | Pictures are stored byte for byte, and the "latest" queries sort and filter correctly |
-| `api.e2e.test.ts` | The whole API, from HTTP request to database: fetching, the latest picture, pictures by id, the health check, and every error answer |
+| `picture.repository.test.ts` | Pictures are stored byte for byte, and the "latest" queries sort correctly |
+| `api.e2e.test.ts` | The whole API, from HTTP request to database: fetching (including random animals), saving nothing when a download fails, the latest picture, pictures by id, the health check, and every error answer |
 
 The end-to-end tests don't use the real picture services, which change their
 pictures and are sometimes offline. Instead they start a small fake picture
@@ -532,32 +594,3 @@ a fake API, so no server is needed.
 
 ---
 
-## How the code is documented
-
-Every file in this project is written to be read by people, not just by
-computers:
-
-- **Every file starts with a short explanation** of what it is for.
-- **Every function, class and setting has a comment** in plain language that
-  explains *what* it does and *why* it's there.
-- **Comments explain the reasoning.** The code already shows *how* something
-  is done; the comments say why it's done that way.
-- **Jargon is avoided or explained** the first time it's used.
-
-JSON files such as `package.json` can't contain normal comments. Where an
-explanation is useful, they use a `"//"` field instead, which npm ignores.
-
----
-
-## Roadmap
-
-| Step | What | Status |
-|---|---|---|
-| 1 | Repository skeleton: `package.json`, npm and Git settings, README | ✅ Done |
-| 1b | Settings file (`.env.example`) with picture services for cats, dogs and bears | ✅ Done |
-| 2 | API service: configuration, health check endpoint, Dockerfile | ✅ Done |
-| 3 | animal-picture-database: PostgreSQL container, TypeORM picture table and repository | ✅ Done |
-| 4 | Picture downloader (cat, dog, bear) and the "fetch new pictures" endpoint | ✅ Done |
-| 5 | "Latest picture" endpoints | ✅ Done |
-| 6 | UI service: web page, Nginx settings, Dockerfile | ✅ Done |
-| 7 | Final documentation pass | ⏳ Next |

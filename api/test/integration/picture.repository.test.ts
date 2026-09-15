@@ -3,7 +3,7 @@
  *
  * The unit tests replace the repository with an in-memory list. These tests
  * check the real thing: that pictures are stored byte for byte, and that the
- * "latest" queries sort and filter correctly in PostgreSQL.
+ * "latest" queries sort correctly in PostgreSQL.
  */
 import type { DataSource } from 'typeorm';
 import type { Animal } from '../../src/config/animals.js';
@@ -44,6 +44,12 @@ async function savePicture(animal: Animal, imageData?: Buffer) {
   return saved!;
 }
 
+/** How many pictures are really in the database. */
+async function savedPictureCount(): Promise<number> {
+  const [{ count }] = await dataSource.query('SELECT count(*)::int AS count FROM "animal_pictures"');
+  return count;
+}
+
 /** Changes when a picture counts as saved, to test the sorting. */
 async function setCreatedAt(id: number, createdAt: string) {
   await dataSource.query(`UPDATE "animal_pictures" SET "created_at" = $1 WHERE "id" = $2`, [createdAt, id]);
@@ -58,7 +64,7 @@ describe('PictureRepository.saveAll', () => {
       [2, 'dog'],
       [3, 'bear'],
     ]);
-    expect(await repository.count()).toBe(3);
+    expect(await savedPictureCount()).toBe(3);
     // Saved together, so they count as saved at the same moment; the last one is the latest.
     expect((await repository.findLatest())?.animal).toBe('bear');
   });
@@ -71,7 +77,7 @@ describe('PictureRepository.saveAll', () => {
       /null value in column "image_data"/,
     );
 
-    expect(await repository.count()).toBe(0);
+    expect(await savedPictureCount()).toBe(0);
   });
 
   it('gives the picture an id and a creation time', async () => {
@@ -106,18 +112,15 @@ describe('PictureRepository.saveAll', () => {
 describe('PictureRepository.findLatest', () => {
   it('returns null when nothing has been saved', async () => {
     expect(await repository.findLatest()).toBeNull();
-    expect(await repository.findLatestDetails('cat')).toBeNull();
+    expect(await repository.findLatestDetails()).toBeNull();
   });
 
-  it('returns the newest picture, of any animal or of one animal', async () => {
+  it('returns the newest picture, whatever the animal', async () => {
     await savePicture('cat');
     await savePicture('dog');
-    await savePicture('cat');
     await savePicture('bear');
 
-    expect((await repository.findLatest())?.id).toBe(4);
-    expect((await repository.findLatest('cat'))?.id).toBe(3);
-    expect((await repository.findLatest('dog'))?.id).toBe(2);
+    expect(await repository.findLatest()).toMatchObject({ id: 3, animal: 'bear' });
   });
 
   it('sorts by creation time, not by id', async () => {
@@ -126,7 +129,7 @@ describe('PictureRepository.findLatest', () => {
     await setCreatedAt(1, '2026-09-15T12:00:00Z');
     await setCreatedAt(2, '2026-09-15T11:00:00Z');
 
-    expect((await repository.findLatest('cat'))?.id).toBe(1);
+    expect((await repository.findLatest())?.id).toBe(1);
   });
 
   it('picks the higher id when two pictures were saved at the same moment', async () => {
@@ -135,14 +138,14 @@ describe('PictureRepository.findLatest', () => {
     await setCreatedAt(1, '2026-09-15T12:00:00Z');
     await setCreatedAt(2, '2026-09-15T12:00:00Z');
 
-    expect((await repository.findLatest('cat'))?.id).toBe(2);
-    expect((await repository.findLatestDetails('cat'))?.id).toBe(2);
+    expect((await repository.findLatest())?.id).toBe(2);
+    expect((await repository.findLatestDetails())?.id).toBe(2);
   });
 
   it('leaves the picture bytes out of the details', async () => {
     await savePicture('bear');
 
-    const details = await repository.findLatestDetails('bear');
+    const details = await repository.findLatestDetails();
 
     expect(details).toMatchObject({ id: 1, animal: 'bear', sizeBytes: 'a bear'.length });
     // TypeORM still puts an "imageData" key on the object, but leaves it empty.
@@ -150,18 +153,8 @@ describe('PictureRepository.findLatest', () => {
   });
 });
 
-describe('PictureRepository.findById and count', () => {
+describe('PictureRepository.findById', () => {
   it('returns null for an id that does not exist', async () => {
     expect(await repository.findById(42)).toBeNull();
-  });
-
-  it('counts pictures, for all animals or for one', async () => {
-    await savePicture('cat');
-    await savePicture('cat');
-    await savePicture('dog');
-
-    expect(await repository.count()).toBe(3);
-    expect(await repository.count('cat')).toBe(2);
-    expect(await repository.count('bear')).toBe(0);
   });
 });

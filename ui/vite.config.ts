@@ -11,7 +11,8 @@ import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig(({ mode }) => {
-  // Read the project's .env file (one folder up), to find the API's port.
+  // Read the project's .env file (one folder up), if there is one, to find
+  // the API's port. Without it, the default port from .env.defaults is used.
   const env = loadEnv(mode, '..', '');
   const apiPort = env['API_PORT'] || '3000';
 

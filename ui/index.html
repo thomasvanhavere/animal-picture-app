@@ -11,13 +11,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <title>Animal Pictures</title>
+    <title>Camunda Animal Pictures</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
     <header class="site-header">
-      <h1>Animal Pictures</h1>
+      <h1>Camunda Animal Pictures</h1>
       <p class="tagline">Random cats, dogs and bears, fetched and saved on demand.</p>
     </header>
 
@@ -44,7 +44,7 @@
           </fieldset>
 
           <div class="field">
-            <label for="count-input">How many</label>
+            <label for="count-input">#Pictures</label>
             <input
               id="count-input"
               name="count"
@@ -54,7 +54,10 @@
               step="1"
               value="1"
               autocomplete="off"
+              aria-describedby="count-hint"
             />
+            <!-- Matches the API's default MAX_PICTURES_PER_REQUEST setting. -->
+            <p id="count-hint" class="field-hint">Max. 10 pictures</p>
           </div>
           <button id="fetch-button" type="submit" class="button">Fetch 1 random picture</button>
         </form>

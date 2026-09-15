@@ -138,6 +138,14 @@ describe('when the page opens', () => {
     expect(page.fetchButton.textContent).toBe('Fetch 1 random picture');
     expect(page.fetchedPictures.textContent).toBe('Pictures you fetch will appear here.');
   });
+
+  it('says under the "How many" box that at most 10 pictures can be fetched', () => {
+    const page = openPage(fakeApi().api);
+
+    const hintId = page.countInput.getAttribute('aria-describedby')!;
+
+    expect(document.getElementById(hintId)?.textContent).toBe('Max. 10 pictures');
+  });
 });
 
 describe('fetching pictures', () => {

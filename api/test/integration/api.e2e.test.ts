@@ -42,8 +42,8 @@ beforeAll(async () => {
     PICTURE_SIZE_VARIATION: '0',
     MAX_PICTURES_PER_REQUEST: '5',
     DOWNLOAD_TIMEOUT_MS: '5000',
-    CAT_PROVIDER: 'placecats',
-    CAT_PROVIDER_PLACECATS_URL: `${pictureService.baseUrl}/cat/{width}/{height}`,
+    CAT_PROVIDER: 'cataas',
+    CAT_PROVIDER_CATAAS_URL: `${pictureService.baseUrl}/cat/{width}/{height}`,
     CAT_PICTURE_WIDTH: '300',
     CAT_PICTURE_HEIGHT: '200',
     DOG_PROVIDER: 'placedog',
@@ -122,7 +122,7 @@ describe('fetching and saving new pictures', () => {
       {
         id: 1,
         animal: 'cat',
-        provider: 'placecats',
+        provider: 'cataas',
         sourceUrl: `${pictureService.baseUrl}/cat/300/200`,
         contentType: 'image/jpeg',
         sizeBytes: pictureService.sentPictures[0]!.byteLength,
@@ -237,54 +237,43 @@ describe('fetching and saving new pictures', () => {
 describe('getting the latest picture', () => {
   it('answers 404 while nothing has been saved', async () => {
     const file = await request(app).get('/api/pictures/latest');
-    const details = await request(app).get('/api/pictures/latest/details?animal=cat');
+    const details = await request(app).get('/api/pictures/latest/details');
 
     expect(file.status).toBe(404);
     expect(file.body).toEqual({ error: 'Not Found', message: 'No picture has been saved yet.' });
     expect(details.status).toBe(404);
-    expect(details.body).toEqual({ error: 'Not Found', message: 'No cat picture has been saved yet.' });
+    expect(details.body).toEqual({ error: 'Not Found', message: 'No picture has been saved yet.' });
   });
 
   it('sends back exactly the picture that was downloaded most recently', async () => {
     await request(app).post('/api/pictures?animal=cat&count=2').expect(201);
     const newestCat = pictureService.sentPictures[1]!;
 
-    const response = await request(app).get('/api/pictures/latest?animal=cat').buffer(true).parse(asBytes);
+    const response = await request(app).get('/api/pictures/latest').buffer(true).parse(asBytes);
 
     expect(response.status).toBe(200);
     expect(response.headers['content-type']).toBe('image/jpeg');
     expect(response.headers['content-length']).toBe(String(newestCat.byteLength));
-    expect(response.headers['x-picture-id']).toBe('2');
-    expect(response.headers['x-picture-animal']).toBe('cat');
     expect(response.body).toEqual(newestCat);
   });
 
-  it('can be limited to one animal, or be the newest of any animal', async () => {
+  it('is the newest picture of any animal', async () => {
     await request(app).post('/api/pictures?animal=cat').expect(201);
     await request(app).post('/api/pictures?animal=dog').expect(201);
     await request(app).post('/api/pictures?animal=cat').expect(201);
-    await request(app).post('/api/pictures?animal=dog').expect(201);
 
-    const latestCat = await request(app).get('/api/pictures/latest/details?animal=cat');
-    const latestAny = await request(app).get('/api/pictures/latest/details');
+    const latest = await request(app).get('/api/pictures/latest/details');
 
-    expect(latestCat.body).toMatchObject({ id: 3, animal: 'cat' });
-    expect(latestAny.body).toMatchObject({ id: 4, animal: 'dog' });
+    expect(latest.body).toMatchObject({ id: 3, animal: 'cat' });
   });
 
   it('gives the same details as the fetch answered with', async () => {
     const created = await request(app).post('/api/pictures?animal=dog').expect(201);
 
-    const details = await request(app).get('/api/pictures/latest/details?animal=dog');
+    const details = await request(app).get('/api/pictures/latest/details');
 
     expect(details.status).toBe(200);
     expect(details.body).toEqual(created.body.pictures[0]);
-  });
-
-  it('refuses an animal that is switched off', async () => {
-    const response = await request(app).get('/api/pictures/latest?animal=bear');
-
-    expect(response.status).toBe(400);
   });
 });
 
@@ -296,7 +285,6 @@ describe('getting one picture by id', () => {
     const response = await request(app).get(second.url).buffer(true).parse(asBytes);
 
     expect(response.status).toBe(200);
-    expect(response.headers['x-picture-id']).toBe(String(second.id));
     expect(response.body).toEqual(pictureService.sentPictures[1]);
   });
 

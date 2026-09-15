@@ -7,7 +7,7 @@
  * reported clearly instead of causing a confusing error later.
  *
  * To add a new animal or picture service, extend the lists in this file and
- * add the matching lines to .env.example.
+ * add the matching lines to .env.defaults.
  */
 
 /**
@@ -34,11 +34,11 @@ export const ALL_ANIMALS: readonly Animal[] = Object.values(Animal);
  * The picture services that exist for each animal.
  *
  * The keys must match the <NAME> part of the <ANIMAL>_PROVIDER_<NAME>_URL
- * settings in .env.example, in lowercase. For example the setting
+ * settings in .env.defaults, in lowercase. For example the setting
  * CAT_PROVIDER_CATAAS_URL belongs to the "cataas" provider.
  */
 export const PROVIDERS_BY_ANIMAL: Readonly<Record<Animal, readonly string[]>> = {
-  cat: ['cataas', 'placecats', 'placekitten'],
+  cat: ['cataas'],
   dog: ['placedog'],
   bear: ['placebear'],
 };

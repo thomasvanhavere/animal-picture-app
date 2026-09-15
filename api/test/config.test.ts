@@ -85,14 +85,14 @@ describe('loadConfig', () => {
   it('rejects an unknown picture service', () => {
     expect(() => loadConfig(validEnv({ CAT_PROVIDER: 'catapi' }))).toThrow(
       new ConfigError(
-        'CAT_PROVIDER is "catapi", which is not a known cat picture service. Allowed: cataas, placecats, placekitten.',
+        'CAT_PROVIDER is "catapi", which is not a known cat picture service. Allowed: cataas.',
       ),
     );
   });
 
   it('requires the URL of the selected picture service', () => {
-    expect(() => loadConfig(validEnv({ CAT_PROVIDER: 'placecats' }))).toThrow(
-      /CAT_PROVIDER_PLACECATS_URL is not set/,
+    expect(() => loadConfig(validEnv({ CAT_PROVIDER_CATAAS_URL: undefined }))).toThrow(
+      /CAT_PROVIDER_CATAAS_URL is not set/,
     );
   });
 
@@ -117,7 +117,7 @@ describe('loadConfig', () => {
 
   it('names the missing setting', () => {
     expect(() => loadConfig(validEnv({ DATABASE_PASSWORD: '' }))).toThrow(
-      new ConfigError('DATABASE_PASSWORD is not set. See .env.example for a description.'),
+      new ConfigError('DATABASE_PASSWORD is not set. See .env.defaults for a description.'),
     );
   });
 });

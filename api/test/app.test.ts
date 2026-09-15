@@ -120,42 +120,22 @@ describe('POST /api/pictures', () => {
 });
 
 describe('GET /api/pictures/latest', () => {
-  it('sends the picture file with its content type and extra headers', async () => {
+  it('sends the picture file with its content type', async () => {
     const { app, calls } = makeApp();
 
-    const response = await request(app).get('/api/pictures/latest?animal=cat');
+    const response = await request(app).get('/api/pictures/latest');
 
     expect(response.status).toBe(200);
     expect(response.headers['content-type']).toBe('image/jpeg');
     expect(response.headers['content-length']).toBe('3');
-    expect(response.headers['x-picture-id']).toBe('7');
-    expect(response.headers['x-picture-animal']).toBe('cat');
     expect(response.body).toEqual(Buffer.from('abc'));
-    expect(calls).toEqual([['getLatest', 'cat']]);
-  });
-
-  it('searches all animals when none is given', async () => {
-    const { app, calls } = makeApp();
-
-    await request(app).get('/api/pictures/latest');
-
-    expect(calls).toEqual([['getLatest', undefined]]);
-  });
-
-  it('does not accept animal=random, which has no latest picture', async () => {
-    const { app, calls } = makeApp();
-
-    const response = await request(app).get('/api/pictures/latest/details?animal=random');
-
-    expect(response.status).toBe(400);
-    expect(response.body.message).toBe('"random" is not a known animal. Choose one of: cat, dog, bear.');
-    expect(calls).toEqual([]);
+    expect(calls).toEqual([['getLatest']]);
   });
 
   it('sends the details as JSON at /latest/details', async () => {
     const { app } = makeApp();
 
-    const response = await request(app).get('/api/pictures/latest/details?animal=cat');
+    const response = await request(app).get('/api/pictures/latest/details');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual(expectedJson);

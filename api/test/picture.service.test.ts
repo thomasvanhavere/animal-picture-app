@@ -39,7 +39,7 @@ function fakeDownloader(failOnDownload?: number) {
 /** A repository that keeps pictures in a list instead of a database. */
 function fakeRepository() {
   const rows: AnimalPicture[] = [];
-  const latest = (animal?: Animal) => [...rows].reverse().find((row) => !animal || row.animal === animal) ?? null;
+  const latest = () => rows.at(-1) ?? null;
 
   const repository = {
     async saveAll(pictures: Omit<AnimalPicture, 'id' | 'createdAt'>[]): Promise<AnimalPicture[]> {
@@ -47,11 +47,11 @@ function fakeRepository() {
       rows.push(...saved);
       return saved;
     },
-    async findLatest(animal?: Animal) {
-      return latest(animal);
+    async findLatest() {
+      return latest();
     },
-    async findLatestDetails(animal?: Animal) {
-      const row = latest(animal);
+    async findLatestDetails() {
+      const row = latest();
       if (!row) return null;
       const { imageData: _imageData, ...details } = row;
       return details;
@@ -157,24 +157,22 @@ describe('PictureService.fetchAndSave', () => {
 });
 
 describe('PictureService.getLatest', () => {
-  it('returns the newest picture of the given animal, with its bytes', async () => {
+  it('returns the newest picture, with its bytes', async () => {
     const { service } = makeService();
     await service.fetchAndSave('cat');
     await service.fetchAndSave('dog');
-    await service.fetchAndSave('cat');
 
-    const latestCat = await service.getLatest('cat');
-    const latestAny = await service.getLatest();
+    const latest = await service.getLatest();
 
-    expect(latestCat).toMatchObject({ id: 3, animal: 'cat' });
-    expect(latestCat.imageData.toString()).toBe('picture of a cat');
-    expect(latestAny.id).toBe(3);
+    expect(latest).toMatchObject({ id: 2, animal: 'dog' });
+    expect(latest.imageData.toString()).toBe('picture of a dog');
+    expect(await service.getLatestDetails()).toMatchObject({ id: 2, animal: 'dog' });
   });
 
   it('reports when nothing has been saved yet', async () => {
     const { service } = makeService();
 
-    await expect(service.getLatest('dog')).rejects.toThrow(new NotFoundError('No dog picture has been saved yet.'));
+    await expect(service.getLatest()).rejects.toThrow(new NotFoundError('No picture has been saved yet.'));
     await expect(service.getLatestDetails()).rejects.toThrow(new NotFoundError('No picture has been saved yet.'));
   });
 
@@ -184,14 +182,5 @@ describe('PictureService.getLatest', () => {
 
     expect((await service.getById(1)).animal).toBe('dog');
     await expect(service.getById(99)).rejects.toThrow(new NotFoundError('There is no picture with id 99.'));
-  });
-});
-
-describe('PictureService with a switched-off animal', () => {
-  it('refuses to look up its latest picture', async () => {
-    const { service } = makeService();
-
-    await expect(service.getLatest('bear')).rejects.toThrow(BadRequestError);
-    await expect(service.getLatestDetails('bear')).rejects.toThrow(BadRequestError);
   });
 });

@@ -78,7 +78,7 @@ export class PictureDownloader {
    *
    * A random number of extra pixels (up to PICTURE_SIZE_VARIATION) is added
    * to each, because some services return the same picture for the same
-   * size. See .env.example for the full explanation.
+   * size. See .env.defaults for the full explanation.
    */
   private buildUrl(animalConfig: AnimalConfig): string {
     const width = animalConfig.width + this.randomVariation();

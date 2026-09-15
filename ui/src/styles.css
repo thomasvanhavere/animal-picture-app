@@ -123,10 +123,13 @@ body {
 
 /* --- The form ------------------------------------------------------------------ */
 
+/* The controls line up at the top, not the bottom, because the "How many"
+   box has a hint underneath that the others don't. */
 .fetch-form {
+  --label-height: calc(0.875rem * 1.5 + 4px);
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
+  align-items: start;
   gap: 12px;
 }
 
@@ -195,10 +198,12 @@ body {
   cursor: progress;
 }
 
+/* A fixed width, so a hint underneath wraps instead of pushing the button away. */
 .field {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 7rem;
 }
 
 .field label {
@@ -207,14 +212,25 @@ body {
   color: var(--color-text-muted);
 }
 
+.field-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 .field input {
-  width: 7rem;
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+}
+
+.fetch-form .button {
+  /* The button has no label above it; this space keeps it level with the boxes. */
+  margin-top: var(--label-height);
 }
 
 .button {

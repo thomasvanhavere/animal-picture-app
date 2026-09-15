@@ -5,9 +5,13 @@
 #   docker compose down             stop everything, keep the saved pictures
 #   docker compose down -v          stop everything AND delete the saved pictures
 #
-# Settings come from the ".env" file next to this file (copy .env.example to
-# get one). Compose reads it automatically, both to fill in the ${...}
-# values below and to pass every setting on to the API container.
+# Settings come from ".env.defaults" next to this file, so no other settings
+# file is needed. To change a setting, put it in a ".env" file instead: its
+# values win over the defaults.
+#
+# The ${NAME:-value} parts below are filled in from ".env" if it sets NAME,
+# and otherwise use the value after ":-". Those values are the same as in
+# .env.defaults; keep them in step if a default ever changes.
 #
 # Services (each one is a separate container):
 #   animal-picture-ui         the web page, at http://localhost:8080
@@ -42,8 +46,12 @@ services:
   animal-picture-api:
     build: ./api
     container_name: animal-picture-api
-    # Give the container every setting from .env ...
-    env_file: .env
+    # Give the container every setting: first the defaults, then .env (if
+    # it exists), whose values win ...
+    env_file:
+      - path: .env.defaults
+      - path: .env
+        required: false
     # ... but override the database address: inside Docker, the database is
     # reached by its service name, not by "localhost".
     environment:
@@ -66,9 +74,9 @@ services:
     environment:
       # PostgreSQL creates this user and database the first time it starts.
       # The values are the same DATABASE_* settings the API uses.
-      POSTGRES_DB: ${DATABASE_NAME}
-      POSTGRES_USER: ${DATABASE_USER}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME:-animal_picture_database}
+      POSTGRES_USER: ${DATABASE_USER:-animal_picture_user}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-animal_picture_password}
     ports:
       # Optional: lets you look at the data with a database tool on your machine.
       - "${DATABASE_PORT:-5432}:5432"
@@ -79,7 +87,8 @@ services:
     healthcheck:
       # "pg_isready" is a small tool that ships with PostgreSQL and reports
       # whether the server accepts connections.
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      # "$$" means a plain "$": the container itself fills in its own POSTGRES_* values.
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
       timeout: 3s
       retries: 10
